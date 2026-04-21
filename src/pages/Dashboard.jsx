@@ -81,15 +81,26 @@ const Dashboard = () => {
             #results-table {
               width: 100% !important;
               border-collapse: collapse !important;
+              table-layout: auto !important;
             }
-            #results-table th, #results-table td {
+            #results-table thead {
+              display: table-header-group !important;
+            }
+            #results-table th, 
+            #results-table td {
               border: 1px solid #ddd !important;
               font-size: 8pt !important;
+              padding: 4px !important;
+              word-break: break-word !important;
             }
             #results-table th {
               background-color: #f1f8fe !important;
               color: #01579b !important;
-              -webkit-print-color-adjust: exact;
+              font-weight: bold !important;
+              text-transform: uppercase !important;
+              position: static !important; /* Disable sticky in print */
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
             }
             .MuiTableContainer-root {
               max-height: none !important;
@@ -97,7 +108,7 @@ const Dashboard = () => {
             }
             @page {
               size: auto;
-              margin: 15mm;
+              margin: 10mm;
             }
           }
         `}
