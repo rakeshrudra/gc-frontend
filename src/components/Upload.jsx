@@ -35,9 +35,14 @@ const Upload = ({ onUploadSuccess }) => {
     const validTypes = [
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       'application/vnd.ms-excel',
+      'text/csv',
     ];
-    if (!validTypes.includes(file.type) && !file.name.endsWith('.xlsx')) {
-      setError('Please select a valid Excel file (.xlsx)');
+    if (
+      !validTypes.includes(file.type) &&
+      !file.name.endsWith('.xlsx') &&
+      !file.name.endsWith('.csv')
+    ) {
+      setError('Please select a valid Excel or CSV file (.xlsx, .csv)');
       return;
     }
     setSelectedFile(file);
@@ -90,70 +95,69 @@ const Upload = ({ onUploadSuccess }) => {
     <Paper
       elevation={0}
       sx={{
-        p: 3,
-        mb: 3,
-        borderRadius: '16px',
+        p: 1.5,
+        mb: 2,
+        borderRadius: '12px',
         border: '1px solid',
         borderColor: 'grey.200',
         background: '#fff',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+        boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
       }}
     >
       <Typography
         variant="subtitle1"
         sx={{ fontWeight: 600, mb: 2, color: 'grey.800' }}
       >
-        Upload Excel File
+        Upload File (Excel or CSV)
       </Typography>
 
       {/* Drop zone */}
-      <Box
-        id="upload-dropzone"
-        onDragEnter={handleDrag}
-        onDragLeave={handleDrag}
-        onDragOver={handleDrag}
-        onDrop={handleDrop}
-        onClick={() => fileInputRef.current?.click()}
-        sx={{
-          border: '2px dashed',
-          borderColor: dragActive ? 'primary.main' : 'grey.300',
-          borderRadius: '12px',
-          p: 4,
-          textAlign: 'center',
-          cursor: 'pointer',
-          transition: 'all 0.25s ease',
-          backgroundColor: dragActive
-            ? 'rgba(26,35,126,0.04)'
-            : 'rgba(0,0,0,0.01)',
-          '&:hover': {
-            borderColor: 'primary.main',
-            backgroundColor: 'rgba(26,35,126,0.04)',
-          },
-        }}
-      >
-        <CloudUploadIcon
+      {!success && (
+        <Box
+          id="upload-dropzone"
+          onDragEnter={handleDrag}
+          onDragLeave={handleDrag}
+          onDragOver={handleDrag}
+          onDrop={handleDrop}
+          onClick={() => fileInputRef.current?.click()}
           sx={{
-            fontSize: 44,
-            color: dragActive ? 'primary.main' : 'grey.400',
-            mb: 1,
-            transition: 'color 0.25s ease',
+            border: '2px dashed',
+            borderColor: dragActive ? 'primary.main' : 'grey.300',
+            borderRadius: '10px',
+            p: 1.5,
+            textAlign: 'center',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+            backgroundColor: dragActive
+              ? 'rgba(26,35,126,0.04)'
+              : 'rgba(0,0,0,0.01)',
+            '&:hover': {
+              borderColor: 'primary.main',
+              backgroundColor: 'rgba(26,35,126,0.04)',
+            },
           }}
-        />
-        <Typography variant="body1" color="text.secondary" sx={{ mb: 0.5 }}>
-          {dragActive
-            ? 'Drop your file here'
-            : 'Drag & drop your Excel file here'}
-        </Typography>
-        <Typography variant="caption" color="text.disabled">
-          or click to browse • .xlsx files only
-        </Typography>
-      </Box>
+        >
+          <CloudUploadIcon
+            sx={{
+              fontSize: 28,
+              color: dragActive ? 'primary.main' : 'grey.400',
+              mb: 0.5,
+            }}
+          />
+          <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+            {dragActive ? 'Drop file here' : 'Drag & drop file or click to browse'}
+          </Typography>
+          <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.7rem' }}>
+            .xlsx, .xls, or .csv
+          </Typography>
+        </Box>
+      )}
 
       <input
         ref={fileInputRef}
         id="file-input"
         type="file"
-        accept=".xlsx,.xls"
+        accept=".xlsx,.xls,.csv"
         onChange={handleFileSelect}
         style={{ display: 'none' }}
       />
@@ -175,32 +179,27 @@ const Upload = ({ onUploadSuccess }) => {
       )}
 
       {/* Upload button */}
-      <Button
-        id="upload-button"
-        variant="contained"
-        onClick={handleUpload}
-        disabled={!selectedFile || loading}
-        fullWidth
-        sx={{
-          mt: 2,
-          py: 1.2,
-          borderRadius: '10px',
-          textTransform: 'none',
-          fontWeight: 600,
-          fontSize: '0.95rem',
-          background: 'linear-gradient(135deg, #0288d1, #29b6f6)',
-          boxShadow: '0 4px 14px rgba(2,136,209,0.3)',
-          '&:hover': {
-            background: 'linear-gradient(135deg, #01579b, #0288d1)',
-            boxShadow: '0 6px 20px rgba(2,136,209,0.4)',
-          },
-          '&:disabled': {
-            background: 'grey.300',
-          },
-        }}
-      >
-        {loading ? 'Uploading…' : 'Upload & Match'}
-      </Button>
+      {!success && (
+        <Button
+          id="upload-button"
+          variant="contained"
+          onClick={handleUpload}
+          disabled={!selectedFile || loading}
+          fullWidth
+          size="small"
+          sx={{
+            mt: 1.5,
+            py: 1,
+            borderRadius: '8px',
+            textTransform: 'none',
+            fontWeight: 700,
+            background: 'linear-gradient(135deg, #0288d1, #29b6f6)',
+            boxShadow: '0 2px 8px rgba(2,136,209,0.2)',
+          }}
+        >
+          {loading ? 'Uploading…' : 'Upload & Match'}
+        </Button>
+      )}
 
       {/* Progress bar */}
       <Collapse in={loading}>
@@ -234,6 +233,11 @@ const Upload = ({ onUploadSuccess }) => {
           severity="success"
           icon={<CheckCircleOutlineIcon />}
           sx={{ mt: 2, borderRadius: '10px' }}
+          action={
+            <Button color="inherit" size="small" onClick={() => setSuccess(false)} sx={{ fontWeight: 800, fontSize: '0.7rem' }}>
+              RE-UPLOAD
+            </Button>
+          }
         >
           File processed successfully! Results are shown below.
         </Alert>
