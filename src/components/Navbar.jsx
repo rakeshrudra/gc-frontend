@@ -23,7 +23,6 @@ import SearchIcon from '@mui/icons-material/Search';
 import { useNavigate } from 'react-router-dom';
 
 const Navbar = ({ onMenuSelect }) => {
-  const navigate = useNavigate();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const handleLogout = () => {
@@ -64,22 +63,22 @@ const Navbar = ({ onMenuSelect }) => {
             <ListItemIcon>
               <CheckCircleOutlineIcon color="primary" />
             </ListItemIcon>
-            <ListItemText 
-              primary={<Typography sx={{ fontWeight: 600, fontSize: '0.9rem' }}>YES/MAYBE</Typography>} 
+            <ListItemText
+              primary={<Typography sx={{ fontWeight: 600, fontSize: '0.9rem' }}>YES/MAYBE</Typography>}
             />
           </ListItemButton>
         </ListItem>
-
         <ListItem disablePadding>
-          <ListItemButton onClick={() => {
-            navigate('/vendorsearch');
-            setDrawerOpen(false);
-          }}>
+          <ListItemButton onClick={() => handleMenuClick('vendorsearch')}>
             <ListItemIcon>
               <SearchIcon color="primary" />
             </ListItemIcon>
-            <ListItemText 
-              primary={<Typography sx={{ fontWeight: 600, fontSize: '0.9rem' }}>Vendor Search</Typography>} 
+            <ListItemText
+              primary={
+                <Typography sx={{ fontWeight: 600, fontSize: '0.9rem' }}>
+                  Vendor Search
+                </Typography>
+              }
             />
           </ListItemButton>
         </ListItem>
