@@ -1,19 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, Container, Typography, Paper } from '@mui/material';
+import { Box, Container, Typography, Paper, Button } from '@mui/material';
 import Navbar from '../components/Navbar';
 import Upload from '../components/Upload';
 import ResultsTable from '../components/Table';
 import VendorSearch from './SearchVendor';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const reportRef = useRef(null);
 
   const [results, setResults] = useState([]);
   const [docHeader, setDocHeader] = useState(null);
-  const [vendorwiseResults, setVendorwiseResults] = useState([]);
-  const [vendorwiseGrouped, setVendorwiseGrouped] = useState({});
-  const [view, setView] = useState('home'); // home | match | vendorsearch
+  const [view, setView] = useState('home');
+  const [showVendorwise, setShowVendorwise] = useState(false);
 
   useEffect(() => {
     const token = sessionStorage.getItem('token');
@@ -24,19 +26,83 @@ const Dashboard = () => {
 
   const handleUploadSuccess = (data) => {
     const rows = data.results || [];
-    const vendorRows = data.vendorwiseResults || [];
-    const groupedVendors = data.vendorwiseGrouped || {};
 
     setResults(rows);
     setDocHeader(data.documentHeader || null);
-    setVendorwiseResults(vendorRows);
-    setVendorwiseGrouped(groupedVendors);
-
+    setShowVendorwise(false);
     setView('match');
   };
 
   const handleMenuSelect = (selectedView) => {
     setView(selectedView);
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const handleExportPDF = async () => {
+    if (!reportRef.current) return;
+
+    document.body.classList.add('export-mode');
+
+    const scrollContainers = reportRef.current.querySelectorAll('.MuiTableContainer-root');
+
+    scrollContainers.forEach((el) => {
+      el.dataset.oldMaxHeight = el.style.maxHeight || '';
+      el.dataset.oldHeight = el.style.height || '';
+      el.dataset.oldOverflow = el.style.overflow || '';
+
+      el.style.maxHeight = 'none';
+      el.style.height = 'auto';
+      el.style.overflow = 'visible';
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 700));
+
+    const canvas = await html2canvas(reportRef.current, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#ffffff',
+      scrollX: 0,
+      scrollY: 0,
+      windowWidth: reportRef.current.scrollWidth,
+      windowHeight: reportRef.current.scrollHeight,
+      width: reportRef.current.scrollWidth,
+      height: reportRef.current.scrollHeight,
+    });
+
+    scrollContainers.forEach((el) => {
+      el.style.maxHeight = el.dataset.oldMaxHeight;
+      el.style.height = el.dataset.oldHeight;
+      el.style.overflow = el.dataset.oldOverflow;
+    });
+
+    document.body.classList.remove('export-mode');
+
+    const imgData = canvas.toDataURL('image/png');
+
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+
+    const imgWidth = pdfWidth;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+    let heightLeft = imgHeight;
+    let position = 0;
+
+    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+    heightLeft -= pdfHeight;
+
+    while (heightLeft > 0) {
+      position = heightLeft - imgHeight;
+      pdf.addPage();
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pdfHeight;
+    }
+
+    pdf.save(showVendorwise ? 'vendorwise-report.pdf' : 'yes-maybe-report.pdf');
   };
 
   const getMajorityDecision = () => {
@@ -59,6 +125,51 @@ const Dashboard = () => {
     <Box sx={{ minHeight: '100vh', backgroundColor: '#f4f7f9' }}>
       <style>
         {`
+          .export-mode .no-print,
+          .export-mode button,
+          .export-mode .MuiButton-root {
+            display: none !important;
+          }
+
+          .export-mode .MuiTableContainer-root {
+            max-height: none !important;
+            height: auto !important;
+            overflow: visible !important;
+          }
+
+          .export-mode table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+          }
+
+          .export-mode th,
+          .export-mode td {
+            border: 1px solid #ddd !important;
+            font-size: 8pt !important;
+            padding: 4px !important;
+            word-break: break-word !important;
+          }
+
+          .export-mode th {
+            background-color: #f1f8fe !important;
+            color: #01579b !important;
+            font-weight: bold !important;
+          }
+
+          .export-mode .decision-badge {
+            background-color: transparent !important;
+            color: #000 !important;
+            border-radius: 0 !important;
+            padding: 0 !important;
+            min-width: auto !important;
+            font-weight: 800 !important;
+            font-size: 8pt !important;
+          }
+
+          .export-mode .MuiAccordionDetails-root {
+            display: block !important;
+          }
+
           @media print {
             .no-print,
             header,
@@ -85,36 +196,37 @@ const Dashboard = () => {
 
             .MuiPaper-root {
               box-shadow: none !important;
-              border: none !important;
-              padding: 0 !important;
             }
 
-            #results-table {
+            table {
               width: 100% !important;
               border-collapse: collapse !important;
-              table-layout: auto !important;
             }
 
-            #results-table thead {
-              display: table-header-group !important;
-            }
-
-            #results-table th,
-            #results-table td {
+            th,
+            td {
               border: 1px solid #ddd !important;
               font-size: 8pt !important;
               padding: 4px !important;
               word-break: break-word !important;
             }
 
-            #results-table th {
+            th {
               background-color: #f1f8fe !important;
               color: #01579b !important;
               font-weight: bold !important;
-              text-transform: uppercase !important;
-              position: static !important;
               -webkit-print-color-adjust: exact !important;
               print-color-adjust: exact !important;
+            }
+
+            .decision-badge {
+              background-color: transparent !important;
+              color: #000 !important;
+              border-radius: 0 !important;
+              padding: 0 !important;
+              min-width: auto !important;
+              font-weight: 800 !important;
+              font-size: 8pt !important;
             }
 
             .MuiTableContainer-root {
@@ -140,9 +252,6 @@ const Dashboard = () => {
             <Typography variant="h5" sx={{ fontWeight: 800, color: '#01579b', mb: 1 }}>
               E_MEDIX GYAN CENTER
             </Typography>
-            <Typography variant="body2" sx={{ mb: 4, color: '#546e7a' }}>
-              Select an option from the menu to continue.
-            </Typography>
 
             <Box sx={{ maxWidth: 900, mx: 'auto' }}>
               <Upload onUploadSuccess={handleUploadSuccess} />
@@ -156,117 +265,74 @@ const Dashboard = () => {
               <Upload onUploadSuccess={handleUploadSuccess} />
             </Box>
 
-            {majority && (
-              <Typography
-                variant="h4"
-                sx={{
-                  textAlign: 'center',
-                  fontWeight: 900,
-                  color: '#0288d1',
-                  mb: 1.5,
-                  letterSpacing: '0.1em',
-                  textTransform: 'uppercase',
-                }}
-              >
-                YES/MAYBE REPORT
-              </Typography>
-            )}
+            <Box ref={reportRef} sx={{ backgroundColor: '#fff', p: 1 }}>
+              {majority && (
+                <Typography
+                  variant="h4"
+                  sx={{
+                    textAlign: 'center',
+                    fontWeight: 900,
+                    color: '#0288d1',
+                    mb: 1.5,
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  YES/MAYBE REPORT
+                </Typography>
+              )}
 
-            {docHeader && (docHeader.title || (docHeader.lines && docHeader.lines.length > 0)) && (
-              <Paper
-                elevation={0}
-                sx={{
-                  p: 1.5,
-                  mb: 1.5,
-                  borderRadius: '12px',
-                  border: '1px solid',
-                  borderColor: 'grey.200',
-                  backgroundColor: '#fff',
-                  boxShadow: '0 1px 4px rgba(0,0,0,0.03)',
-                  textAlign: 'center',
-                }}
-              >
-                {docHeader.title && (
-                  <Typography
-                    variant="h6"
-                    sx={{
-                      fontWeight: 900,
-                      color: '#01579b',
-                      mb: 1,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.02em',
-                    }}
-                  >
+              {docHeader?.title && (
+                <Paper sx={{ p: 1.5, mb: 1.5, textAlign: 'center' }}>
+                  <Typography variant="h6" sx={{ fontWeight: 900 }}>
                     {docHeader.title}
                   </Typography>
-                )}
+                </Paper>
+              )}
 
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                  {docHeader.lines
-                    ?.filter((line, index, arr) => {
-                      if (index === 0 && line === docHeader.title) return false;
-                      const lower = line.toLowerCase();
-                      if (
-                        index >= arr.length - 2 &&
-                        (lower.includes('cst no') || lower.includes('d.l. no'))
-                      ) {
-                        return false;
-                      }
-                      return true;
-                    })
-                    .map((line, idx) => {
-                      const isPurchaseOrder = line.toLowerCase().includes('purchase order');
-
-                      return (
-                        <Typography
-                          key={idx}
-                          variant="caption"
-                          sx={{
-                            color: isPurchaseOrder ? '#01579b' : '#1a1a1a',
-                            fontWeight: isPurchaseOrder ? 900 : 700,
-                            fontSize: isPurchaseOrder ? '0.85rem' : '0.75rem',
-                            textTransform: isPurchaseOrder ? 'uppercase' : 'none',
-                            lineHeight: 1.4,
-                          }}
-                        >
-                          {line}
-                        </Typography>
-                      );
-                    })}
-                </Box>
-              </Paper>
-            )}
-
-            {results.length > 0 && (
-              <Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
-                  <Typography
-                    variant="subtitle2"
-                    sx={{ fontWeight: 700, color: '#1a1a1a', flexGrow: 1 }}
+              {results.length > 0 && (
+                <Box>
+                  <Box
+                    className="no-print"
+                    sx={{ display: 'flex', alignItems: 'center', mb: 1.5, gap: 1 }}
                   >
-                    MATCHED RESULTS
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: '#546e7a', fontWeight: 600 }}>
-                    TOTAL: {results.length}
-                  </Typography>
+                    <Typography sx={{ fontWeight: 700, flexGrow: 1 }}>
+                      {showVendorwise ? 'VENDORWISE REPORT' : 'MATCHED RESULTS'}
+                    </Typography>
+
+                    <Typography sx={{ fontSize: 12 }}>
+                      TOTAL: {results.length}
+                    </Typography>
+
+                    <Button variant="outlined" size="small" onClick={handlePrint}>
+                      Print
+                    </Button>
+
+                    <Button
+                      variant="contained"
+                      size="small"
+                      onClick={handleExportPDF}
+                      sx={{ backgroundColor: '#2e7d32' }}
+                    >
+                      Export PDF
+                    </Button>
+
+                    <Button
+                      variant="contained"
+                      size="small"
+                      onClick={() => setShowVendorwise(!showVendorwise)}
+                    >
+                      {showVendorwise ? 'Show Normal Report' : 'Show Vendorwise'}
+                    </Button>
+                  </Box>
+
+                  {showVendorwise ? (
+                    <VendorSearch results={results} documentHeader={docHeader} />
+                  ) : (
+                    <ResultsTable data={results} />
+                  )}
                 </Box>
-
-                <ResultsTable data={results} />
-              </Box>
-            )}
-          </>
-        )}
-
-        {view === 'vendorsearch' && (
-          <>
-            <Box sx={{ mb: 3 }} className="no-print">
-              <Upload onUploadSuccess={handleUploadSuccess} />
+              )}
             </Box>
-
-            <VendorSearch
-              results={results}
-              documentHeader={docHeader}
-            />
           </>
         )}
       </Container>

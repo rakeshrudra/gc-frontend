@@ -19,7 +19,6 @@ import MenuIcon from '@mui/icons-material/Menu';
 import LogoutIcon from '@mui/icons-material/Logout';
 import LocalPharmacyIcon from '@mui/icons-material/LocalPharmacy';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutlined';
-import SearchIcon from '@mui/icons-material/Search';
 import { useNavigate } from 'react-router-dom';
 
 const Navbar = ({ onMenuSelect }) => {
@@ -65,20 +64,6 @@ const Navbar = ({ onMenuSelect }) => {
             </ListItemIcon>
             <ListItemText
               primary={<Typography sx={{ fontWeight: 600, fontSize: '0.9rem' }}>YES/MAYBE</Typography>}
-            />
-          </ListItemButton>
-        </ListItem>
-        <ListItem disablePadding>
-          <ListItemButton onClick={() => handleMenuClick('vendorsearch')}>
-            <ListItemIcon>
-              <SearchIcon color="primary" />
-            </ListItemIcon>
-            <ListItemText
-              primary={
-                <Typography sx={{ fontWeight: 600, fontSize: '0.9rem' }}>
-                  Vendor Search
-                </Typography>
-              }
             />
           </ListItemButton>
         </ListItem>

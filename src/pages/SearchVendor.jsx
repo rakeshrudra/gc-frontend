@@ -255,12 +255,29 @@ const SearchVendor = ({ results = [], documentHeader }) => {
                                                 <TableCell>{safeText(row.matchedProduct)}</TableCell>
                                                 <TableCell>{safeText(row.matchedCompany)}</TableCell>
                                                 <TableCell>
-                                                    <Chip
-                                                        label={String(row.decision || 'no').toUpperCase()}
-                                                        color={decisionColor(row.decision)}
-                                                        size="small"
-                                                        sx={{ fontWeight: 800, minWidth: 70 }}
-                                                    />
+                                                    <Box
+                                                        className="decision-badge"
+                                                        sx={{
+                                                            backgroundColor:
+                                                                row.decision === 'yes'
+                                                                    ? '#2e7d32'
+                                                                    : row.decision === 'maybe'
+                                                                        ? '#ed6c02'
+                                                                        : '#d32f2f',
+                                                            color: '#fff',
+                                                            fontWeight: 900,
+                                                            fontSize: '0.7rem',
+                                                            px: 1.2,
+                                                            py: 0.4,
+                                                            borderRadius: '14px',
+                                                            minWidth: 70,
+                                                            display: 'inline-block',
+                                                            textAlign: 'center',
+                                                            lineHeight: 1.4,
+                                                        }}
+                                                    >
+                                                        {String(row.decision || 'no').toUpperCase()}
+                                                    </Box>
                                                 </TableCell>
                                                 <TableCell>{safeText(row.status)}</TableCell>
                                             </TableRow>

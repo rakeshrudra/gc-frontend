@@ -1,12 +1,18 @@
 import React from 'react';
 import {
-  Table as MuiTable, TableBody, TableCell, TableContainer,
-  TableHead, TableRow, Paper, Typography, Chip, Box, IconButton,
+  Table as MuiTable,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Typography,
+  Chip,
+  Box,
+  IconButton,
 } from '@mui/material';
 import PrintIcon from '@mui/icons-material/Print';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import HelpOutlineIcon from '@mui/icons-material/HelpOutlined';
-import CancelIcon from '@mui/icons-material/Cancel';
 import InboxIcon from '@mui/icons-material/Inbox';
 
 const columns = [
@@ -27,43 +33,140 @@ const columns = [
 const ResultsTable = ({ data }) => {
   if (!data || data.length === 0) {
     return (
-      <Paper elevation={0} sx={{ p: 6, textAlign: 'center', borderRadius: '16px', border: '1px solid', borderColor: 'grey.200' }}>
+      <Paper
+        elevation={0}
+        sx={{
+          p: 6,
+          textAlign: 'center',
+          borderRadius: '16px',
+          border: '1px solid',
+          borderColor: 'grey.200',
+        }}
+      >
         <InboxIcon sx={{ fontSize: 56, color: 'grey.300', mb: 2 }} />
-        <Typography variant="h6" color="text.secondary" sx={{ fontWeight: 500 }}>No results to display</Typography>
-        <Typography variant="body2" color="text.disabled" sx={{ mt: 0.5 }}>Upload an Excel file to see matched results here.</Typography>
+        <Typography variant="h6" color="text.secondary" sx={{ fontWeight: 500 }}>
+          No results to display
+        </Typography>
+        <Typography variant="body2" color="text.disabled" sx={{ mt: 0.5 }}>
+          Upload an Excel file to see matched results here.
+        </Typography>
       </Paper>
     );
   }
 
   const getRowStyle = (decision) => {
     const decisionLower = decision?.toLowerCase();
-    if (decisionLower === 'yes') return { backgroundColor: '#e8f5e9', '&:hover': { backgroundColor: '#c8e6c9' }, transition: 'background-color 0.2s ease' };
-    if (decisionLower === 'maybe') return { backgroundColor: '#fff9c4', '&:hover': { backgroundColor: '#fff59d' }, transition: 'background-color 0.2s ease' };
-    if (decisionLower === 'no') return { backgroundColor: '#ffebee', '&:hover': { backgroundColor: '#ffcdd2' }, transition: 'background-color 0.2s ease' };
-    return { '&:hover': { backgroundColor: '#f5f5f5' }, transition: 'background-color 0.2s ease' };
-  };
 
-  const renderDecisionChip = (decision) => {
-    if (decision === 'yes') return <Chip icon={<CheckCircleIcon sx={{ fontSize: 16, color: '#fff !important' }} />} label="YES" size="small" sx={{ backgroundColor: '#2e7d32', color: '#fff', fontWeight: 700, fontSize: '0.7rem' }} />;
-    if (decision === 'maybe') return <Chip icon={<HelpOutlineIcon sx={{ fontSize: 16, color: '#fff !important' }} />} label="MAYBE" size="small" sx={{ backgroundColor: '#f57f17', color: '#fff', fontWeight: 700, fontSize: '0.7rem' }} />;
-    if (decision === 'no') return <Chip icon={<CancelIcon sx={{ fontSize: 16, color: '#fff !important' }} />} label="NO" size="small" sx={{ backgroundColor: '#d32f2f', color: '#fff', fontWeight: 700, fontSize: '0.7rem' }} />;
-    return <Typography variant="caption" sx={{ fontWeight: 600 }}>{decision || '—'}</Typography>;
+    if (decisionLower === 'yes') {
+      return {
+        backgroundColor: '#e8f5e9',
+        '&:hover': { backgroundColor: '#c8e6c9' },
+        transition: 'background-color 0.2s ease',
+      };
+    }
+
+    if (decisionLower === 'maybe') {
+      return {
+        backgroundColor: '#fff9c4',
+        '&:hover': { backgroundColor: '#fff59d' },
+        transition: 'background-color 0.2s ease',
+      };
+    }
+
+    if (decisionLower === 'no') {
+      return {
+        backgroundColor: '#ffebee',
+        '&:hover': { backgroundColor: '#ffcdd2' },
+        transition: 'background-color 0.2s ease',
+      };
+    }
+
+    return {
+      '&:hover': { backgroundColor: '#f5f5f5' },
+      transition: 'background-color 0.2s ease',
+    };
   };
 
   const fmt = (val) => {
     if (val == null || val === '') return '—';
     const n = Number(val);
-    return isNaN(n) ? val : `₹${n.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+    return isNaN(n)
+      ? val
+      : `₹${n.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+  };
+
+  const renderDecisionChip = (decision) => {
+    const value = String(decision || 'no').toLowerCase();
+
+    let label = 'NO';
+    let bg = '#d32f2f';
+
+    if (value === 'yes') {
+      label = 'YES';
+      bg = '#2e7d32';
+    }
+
+    if (value === 'maybe') {
+      label = 'MAYBE';
+      bg = '#ed6c02';
+    }
+
+    return (
+      <Box
+        className="decision-badge"
+        sx={{
+          backgroundColor: bg,
+          color: '#fff',
+          fontWeight: 900,
+          fontSize: '0.7rem',
+          px: 1.2,
+          py: 0.4,
+          borderRadius: '14px',
+          minWidth: 70,
+          display: 'inline-block',
+          textAlign: 'center',
+          lineHeight: 1.4,
+        }}
+      >
+        {label}
+      </Box>
+    );
   };
 
   const renderVendors = (v) => {
     if (!v) return '—';
-    if (Array.isArray(v)) return <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>{v.map((x, i) => <Chip key={i} label={x} size="small" variant="outlined" sx={{ fontSize: '0.7rem', height: 22 }} />)}</Box>;
+
+    if (Array.isArray(v)) {
+      return (
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+          {v.map((x, i) => (
+            <Chip
+              key={i}
+              label={x}
+              size="small"
+              variant="outlined"
+              sx={{ fontSize: '0.7rem', height: 22 }}
+            />
+          ))}
+        </Box>
+      );
+    }
+
     return String(v);
   };
 
   return (
-    <TableContainer component={Paper} elevation={0} sx={{ borderRadius: '16px', border: '1px solid', borderColor: 'grey.200', overflow: 'auto', maxHeight: '85vh' }}>
+    <TableContainer
+      component={Paper}
+      elevation={0}
+      sx={{
+        borderRadius: '16px',
+        border: '1px solid',
+        borderColor: 'grey.200',
+        overflow: 'auto',
+        maxHeight: '85vh',
+      }}
+    >
       <MuiTable stickyHeader size="small" id="results-table">
         <TableHead>
           <TableRow>
@@ -71,6 +174,7 @@ const ResultsTable = ({ data }) => {
               <TableCell
                 key={col.key}
                 align={col.align || 'left'}
+                className={col.key === 'print' ? 'no-print' : ''}
                 sx={{
                   fontWeight: 800,
                   fontSize: '0.7rem',
@@ -91,35 +195,61 @@ const ResultsTable = ({ data }) => {
             ))}
           </TableRow>
         </TableHead>
+
         <TableBody>
           {data.map((row, rowIndex) => (
             <TableRow key={rowIndex} sx={getRowStyle(row.decision)}>
-              <TableCell sx={{ fontWeight: 600, color: '#546e7a', borderRight: '1px solid #f0f0f0', borderBottom: '1px solid #f0f0f0' }}>{rowIndex + 1}</TableCell>
-              <TableCell sx={{ fontWeight: 700, color: '#1a1a1a', borderRight: '1px solid #f0f0f0', borderBottom: '1px solid #f0f0f0' }}>{row.Particulars || '—'}</TableCell>
-              <TableCell sx={{ color: '#2c3e50', fontWeight: 500, borderRight: '1px solid #f0f0f0', borderBottom: '1px solid #f0f0f0' }}>{row.Packing || '—'}</TableCell>
-              <TableCell sx={{ color: '#2c3e50', fontWeight: 500, borderRight: '1px solid #f0f0f0', borderBottom: '1px solid #f0f0f0' }}>{row.Company || '—'}</TableCell>
+              <TableCell sx={{ fontWeight: 600, color: '#546e7a', borderRight: '1px solid #f0f0f0', borderBottom: '1px solid #f0f0f0' }}>
+                {rowIndex + 1}
+              </TableCell>
+
+              <TableCell sx={{ fontWeight: 700, color: '#1a1a1a', borderRight: '1px solid #f0f0f0', borderBottom: '1px solid #f0f0f0' }}>
+                {row.Particulars || '—'}
+              </TableCell>
+
+              <TableCell sx={{ color: '#2c3e50', fontWeight: 500, borderRight: '1px solid #f0f0f0', borderBottom: '1px solid #f0f0f0' }}>
+                {row.Packing || '—'}
+              </TableCell>
+
+              <TableCell sx={{ color: '#2c3e50', fontWeight: 500, borderRight: '1px solid #f0f0f0', borderBottom: '1px solid #f0f0f0' }}>
+                {row.Company || '—'}
+              </TableCell>
+
               <TableCell align="right" sx={{ color: '#1a1a1a', fontWeight: 600, borderRight: '1px solid #f0f0f0', borderBottom: '1px solid #f0f0f0' }}>
                 {row['Qty.'] ?? row.Qty ?? row.qty ?? row.quantity ?? '—'}
               </TableCell>
+
               <TableCell align="right" sx={{ color: '#1a1a1a', fontWeight: 600, borderRight: '1px solid #f0f0f0', borderBottom: '1px solid #f0f0f0' }}>
                 {fmt(row.Rate ?? row.rate ?? row.price)}
               </TableCell>
+
               <TableCell align="right" sx={{ color: '#0277bd', fontWeight: 700, borderRight: '1px solid #f0f0f0', borderBottom: '1px solid #f0f0f0' }}>
                 {fmt(row.Amount ?? row.amount ?? row.amt)}
               </TableCell>
-              <TableCell sx={{ fontWeight: 700, color: '#01579b', borderRight: '1px solid #f0f0f0', borderBottom: '1px solid #f0f0f0' }}>{row.matchedProduct || '—'}</TableCell>
-              <TableCell sx={{ 
-                fontWeight: row.Company !== row.matchedCompany ? 800 : 700, 
-                color: row.Company !== row.matchedCompany ? '#0288d1' : '#01579b', 
-                borderRight: '1px solid #f0f0f0', 
-                borderBottom: '1px solid #f0f0f0' 
-              }}>
+
+              <TableCell sx={{ fontWeight: 700, color: '#01579b', borderRight: '1px solid #f0f0f0', borderBottom: '1px solid #f0f0f0' }}>
+                {row.matchedProduct || '—'}
+              </TableCell>
+
+              <TableCell
+                sx={{
+                  fontWeight: row.Company !== row.matchedCompany ? 800 : 700,
+                  color: row.Company !== row.matchedCompany ? '#0288d1' : '#01579b',
+                  borderRight: '1px solid #f0f0f0',
+                  borderBottom: '1px solid #f0f0f0',
+                }}
+              >
                 {row.matchedCompany || '—'}
               </TableCell>
+
               <TableCell align="center" sx={{ borderRight: '1px solid #f0f0f0', borderBottom: '1px solid #f0f0f0' }}>
                 {renderDecisionChip(row.decision)}
               </TableCell>
-              <TableCell sx={{ borderRight: '1px solid #f0f0f0', borderBottom: '1px solid #f0f0f0' }}>{renderVendors(row.uniqueVendors)}</TableCell>
+
+              <TableCell sx={{ borderRight: '1px solid #f0f0f0', borderBottom: '1px solid #f0f0f0' }}>
+                {renderVendors(row.uniqueVendors)}
+              </TableCell>
+
               <TableCell align="center" className="no-print" sx={{ borderBottom: '1px solid #f0f0f0' }}>
                 <IconButton
                   size="small"
