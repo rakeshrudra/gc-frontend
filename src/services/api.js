@@ -35,7 +35,7 @@ api.interceptors.response.use(
  * @returns {{ access_token: string }}
  */
 export const loginUser = async (username, password) => {
-  const response = await api.post('/auth/login', { username, password });
+  const response = await api.post('/admins/login', { username, password });
   return response.data;
 };
 
