@@ -53,4 +53,9 @@ export const uploadFile = async (file) => {
   return response.data;
 };
 
+export const getVendorwiseResults = async (results) => {
+  const response = await api.post('/match/vendorwise', { results });
+  return response.data;
+};
+
 export default api;

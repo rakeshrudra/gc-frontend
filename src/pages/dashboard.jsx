@@ -7,6 +7,7 @@ import ResultsTable from '../components/Table';
 import VendorSearch from './SearchVendor';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { getVendorwiseResults } from '../services/api';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -16,6 +17,8 @@ const Dashboard = () => {
   const [docHeader, setDocHeader] = useState(null);
   const [view, setView] = useState('home');
   const [showVendorwise, setShowVendorwise] = useState(false);
+  const [vendorwiseResults, setVendorwiseResults] = useState([]);
+  const [vendorwiseLoading, setVendorwiseLoading] = useState(false);
 
   useEffect(() => {
     const token = sessionStorage.getItem('token');
@@ -30,6 +33,7 @@ const Dashboard = () => {
     setResults(rows);
     setDocHeader(data.documentHeader || null);
     setShowVendorwise(false);
+    setVendorwiseResults([]);
     setView('match');
   };
 
@@ -39,6 +43,31 @@ const Dashboard = () => {
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleVendorwiseToggle = async () => {
+    if (showVendorwise) {
+      setShowVendorwise(false);
+      return;
+    }
+
+    if (vendorwiseResults.length > 0) {
+      setShowVendorwise(true);
+      return;
+    }
+
+    setVendorwiseLoading(true);
+
+    try {
+      const data = await getVendorwiseResults(results);
+      setVendorwiseResults(data.vendorwiseResults || []);
+      setShowVendorwise(true);
+    } catch (error) {
+      console.error('Vendorwise fetch failed:', error);
+      alert('Vendorwise report failed. Please try again.');
+    } finally {
+      setVendorwiseLoading(false);
+    }
   };
 
   const handleExportPDF = async () => {
@@ -166,10 +195,6 @@ const Dashboard = () => {
             font-size: 8pt !important;
           }
 
-          .export-mode .MuiAccordionDetails-root {
-            display: block !important;
-          }
-
           @media print {
             .no-print,
             header,
@@ -277,15 +302,35 @@ const Dashboard = () => {
                     textTransform: 'uppercase',
                   }}
                 >
-                  YES/MAYBE REPORT
+                  {showVendorwise ? 'VENDORWISE REPORT' : 'YES/MAYBE REPORT'}
                 </Typography>
               )}
 
-              {docHeader?.title && (
-                <Paper sx={{ p: 1.5, mb: 1.5, textAlign: 'center' }}>
-                  <Typography variant="h6" sx={{ fontWeight: 900 }}>
-                    {docHeader.title}
-                  </Typography>
+              {docHeader?.lines?.length > 0 && (
+                <Paper
+                  sx={{
+                    p: 2,
+                    mb: 2,
+                    textAlign: 'center',
+                    borderRadius: '10px',
+                    border: '1px solid #e0e0e0',
+                    boxShadow: 'none',
+                  }}
+                >
+                  {docHeader.lines.map((line, index) => (
+                    <Typography
+                      key={index}
+                      sx={{
+                        fontWeight: index === 0 ? 900 : 600,
+                        fontSize: index === 0 ? '1.1rem' : '0.8rem',
+                        color: index === 0 ? '#01579b' : '#263238',
+                        lineHeight: 1.6,
+                        textTransform: index === 0 ? 'uppercase' : 'none',
+                      }}
+                    >
+                      {line}
+                    </Typography>
+                  ))}
                 </Paper>
               )}
 
@@ -300,7 +345,7 @@ const Dashboard = () => {
                     </Typography>
 
                     <Typography sx={{ fontSize: 12 }}>
-                      TOTAL: {results.length}
+                      TOTAL: {showVendorwise ? vendorwiseResults.length : results.length}
                     </Typography>
 
                     <Button variant="outlined" size="small" onClick={handlePrint}>
@@ -319,14 +364,19 @@ const Dashboard = () => {
                     <Button
                       variant="contained"
                       size="small"
-                      onClick={() => setShowVendorwise(!showVendorwise)}
+                      onClick={handleVendorwiseToggle}
+                      disabled={vendorwiseLoading}
                     >
-                      {showVendorwise ? 'Show Normal Report' : 'Show Vendorwise'}
+                      {vendorwiseLoading
+                        ? 'Loading Vendorwise...'
+                        : showVendorwise
+                          ? 'Show Normal Report'
+                          : 'Show Vendorwise'}
                     </Button>
                   </Box>
 
                   {showVendorwise ? (
-                    <VendorSearch results={results} documentHeader={docHeader} />
+                    <VendorSearch results={vendorwiseResults} documentHeader={docHeader} />
                   ) : (
                     <ResultsTable data={results} />
                   )}
