@@ -36,7 +36,8 @@ const Login = () => {
     setError('');
     try {
       const data = await loginUser(username, password);
-      sessionStorage.setItem('token', data.access_token);
+      console.log(data);
+      sessionStorage.setItem('token', data.accessToken);
       navigate('/dashboard', { replace: true });
     } catch (err) {
       const msg = err.response?.data?.message || 'Invalid credentials. Please try again.';
