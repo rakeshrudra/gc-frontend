@@ -4,7 +4,6 @@ import {
   Button,
   Typography,
   Paper,
-  LinearProgress,
   Alert,
   Collapse,
   Chip,
@@ -13,6 +12,7 @@ import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutlined';
 import { uploadFile } from '../services/api';
+import { LifeLine } from 'react-loading-indicators';
 
 const Upload = ({ onUploadSuccess }) => {
   const fileInputRef = useRef(null);
@@ -24,9 +24,7 @@ const Upload = ({ onUploadSuccess }) => {
 
   const handleFileSelect = (e) => {
     const file = e.target.files[0];
-    if (file) {
-      validateAndSet(file);
-    }
+    if (file) validateAndSet(file);
   };
 
   const validateAndSet = (file) => {
@@ -51,11 +49,8 @@ const Upload = ({ onUploadSuccess }) => {
   const handleDrag = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (e.type === 'dragenter' || e.type === 'dragover') {
-      setDragActive(true);
-    } else if (e.type === 'dragleave') {
-      setDragActive(false);
-    }
+    if (e.type === 'dragenter' || e.type === 'dragover') setDragActive(true);
+    else if (e.type === 'dragleave') setDragActive(false);
   };
 
   const handleDrop = (e) => {
@@ -72,6 +67,7 @@ const Upload = ({ onUploadSuccess }) => {
       setError('Please select a file first');
       return;
     }
+
     setLoading(true);
     setError('');
     setSuccess(false);
@@ -98,20 +94,17 @@ const Upload = ({ onUploadSuccess }) => {
         p: 1.5,
         mb: 2,
         borderRadius: '12px',
-        border: '1px solid',
-        borderColor: 'grey.200',
-        background: '#fff',
-        boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+        border: '1px solid #d9f7ef',
+        background: 'rgba(255,255,255,0.95)',
       }}
     >
       <Typography
         variant="subtitle1"
-        sx={{ fontWeight: 600, mb: 2, color: 'grey.800' }}
+        sx={{ fontWeight: 700, mb: 2, color: '#2bb3b1' }}
       >
         Upload File (Excel or CSV)
       </Typography>
 
-      {/* Drop zone */}
       {!success && (
         <Box
           id="upload-dropzone"
@@ -122,119 +115,89 @@ const Upload = ({ onUploadSuccess }) => {
           onClick={() => fileInputRef.current?.click()}
           sx={{
             border: '2px dashed',
-            borderColor: dragActive ? 'primary.main' : 'grey.300',
+            borderColor: dragActive ? '#2bb3b1' : '#cbd5e1',
             borderRadius: '10px',
             p: 1.5,
             textAlign: 'center',
             cursor: 'pointer',
-            transition: 'all 0.2s ease',
             backgroundColor: dragActive
-              ? 'rgba(26,35,126,0.04)'
+              ? 'rgba(111,231,221,0.15)'
               : 'rgba(0,0,0,0.01)',
-            '&:hover': {
-              borderColor: 'primary.main',
-              backgroundColor: 'rgba(26,35,126,0.04)',
-            },
           }}
         >
           <CloudUploadIcon
             sx={{
               fontSize: 28,
-              color: dragActive ? 'primary.main' : 'grey.400',
-              mb: 0.5,
+              color: dragActive ? '#2bb3b1' : '#94a3b8',
             }}
           />
-          <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+          <Typography variant="body2">
             {dragActive ? 'Drop file here' : 'Drag & drop file or click to browse'}
-          </Typography>
-          <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.7rem' }}>
-            .xlsx, .xls, or .csv
           </Typography>
         </Box>
       )}
 
       <input
         ref={fileInputRef}
-        id="file-input"
         type="file"
         accept=".xlsx,.xls,.csv"
         onChange={handleFileSelect}
         style={{ display: 'none' }}
       />
 
-      {/* Selected file indicator */}
       {selectedFile && (
         <Box sx={{ mt: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-          <InsertDriveFileIcon sx={{ color: 'primary.main', fontSize: 20 }} />
-          <Typography variant="body2" sx={{ fontWeight: 500, flexGrow: 1 }}>
-            {selectedFile.name}
-          </Typography>
-          <Chip
-            label={`${(selectedFile.size / 1024).toFixed(1)} KB`}
-            size="small"
-            variant="outlined"
-            sx={{ fontSize: '0.7rem' }}
-          />
+          <InsertDriveFileIcon sx={{ color: '#2bb3b1' }} />
+          <Typography sx={{ flexGrow: 1 }}>{selectedFile.name}</Typography>
+          <Chip label={`${(selectedFile.size / 1024).toFixed(1)} KB`} size="small" />
         </Box>
       )}
 
-      {/* Upload button */}
       {!success && (
         <Button
-          id="upload-button"
           variant="contained"
           onClick={handleUpload}
           disabled={!selectedFile || loading}
           fullWidth
-          size="small"
           sx={{
             mt: 1.5,
-            py: 1,
             borderRadius: '8px',
-            textTransform: 'none',
             fontWeight: 700,
-            background: 'linear-gradient(135deg, #0288d1, #29b6f6)',
-            boxShadow: '0 2px 8px rgba(2,136,209,0.2)',
+            background: 'linear-gradient(135deg, #2bb3b1, #3aaed8)',
+            color: '#ffffff',
           }}
         >
-          {loading ? 'Uploading…' : 'Upload & Match'}
+          {loading ? (
+            <LifeLine
+              size="small"
+              color="#4ade80"   // ✅ single light green
+            />
+          ) : (
+            'Upload & Match'
+          )}
         </Button>
       )}
 
-      {/* Progress bar */}
-      <Collapse in={loading}>
-        <LinearProgress
-          sx={{
-            mt: 2,
-            borderRadius: 4,
-            height: 6,
-            '& .MuiLinearProgress-bar': {
-              background: 'linear-gradient(90deg, #0288d1, #29b6f6)',
-            },
-          }}
-        />
-      </Collapse>
+      {/* ❌ REMOVED LinearProgress */}
 
-      {/* Error / success alerts */}
       <Collapse in={!!error}>
-        <Alert
-          id="upload-error"
-          severity="error"
-          sx={{ mt: 2, borderRadius: '10px' }}
-          onClose={() => setError('')}
-        >
+        <Alert severity="error" sx={{ mt: 2 }} onClose={() => setError('')}>
           {error}
         </Alert>
       </Collapse>
 
       <Collapse in={success}>
         <Alert
-          id="upload-success"
           severity="success"
           icon={<CheckCircleOutlineIcon />}
-          sx={{ mt: 2, borderRadius: '10px' }}
+          sx={{ mt: 2 }}
           action={
-            <Button color="inherit" size="small" onClick={() => setSuccess(false)} sx={{ fontWeight: 800, fontSize: '0.7rem' }}>
+            <Button
+              color="inherit"
+              size="small"
+              onClick={() => setSuccess(false)}
+              sx={{ fontWeight: 800, fontSize: '0.7rem' }}
+            >
               RE-UPLOAD
             </Button>
           }

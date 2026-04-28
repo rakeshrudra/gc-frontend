@@ -6,7 +6,6 @@ import {
   Button,
   Box,
   IconButton,
-  Tooltip,
   Drawer,
   List,
   ListItem,
@@ -17,9 +16,9 @@ import {
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import LogoutIcon from '@mui/icons-material/Logout';
-import LocalPharmacyIcon from '@mui/icons-material/LocalPharmacy';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutlined';
 import { useNavigate } from 'react-router-dom';
+import logo from '../assets/eops-logo.png';
 
 const Navbar = ({ onMenuSelect }) => {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -49,31 +48,50 @@ const Navbar = ({ onMenuSelect }) => {
       onClick={toggleDrawer(false)}
       onKeyDown={toggleDrawer(false)}
     >
-      <Box sx={{ p: 2, display: 'flex', alignItems: 'center', backgroundColor: '#e1f5fe' }}>
-        <LocalPharmacyIcon sx={{ mr: 1, color: '#0288d1' }} />
-        <Typography variant="h6" sx={{ fontWeight: 700, color: '#01579b' }}>
+      <Box
+        sx={{
+          p: 2,
+          display: 'flex',
+          alignItems: 'center',
+          background: 'linear-gradient(135deg, #e0fdf8, #e3f8ff)',
+        }}
+      >
+        <img
+          src={logo}
+          alt="EOPS Logo"
+          style={{ width: 90, marginRight: 10 }}
+        />
+        <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f9f9a' }}>
           Menu
         </Typography>
       </Box>
+
       <Divider />
+
       <List>
         <ListItem disablePadding>
           <ListItemButton onClick={() => handleMenuClick('match')}>
             <ListItemIcon>
-              <CheckCircleOutlineIcon color="primary" />
+              <CheckCircleOutlineIcon sx={{ color: '#16a085' }} />
             </ListItemIcon>
             <ListItemText
-              primary={<Typography sx={{ fontWeight: 600, fontSize: '0.9rem' }}>YES/MAYBE</Typography>}
+              primary={
+                <Typography sx={{ fontWeight: 600, fontSize: '0.9rem' }}>
+                  YES/MAYBE
+                </Typography>
+              }
             />
           </ListItemButton>
         </ListItem>
       </List>
+
       <Divider />
+
       <List>
         <ListItem disablePadding>
           <ListItemButton onClick={handleLogout}>
             <ListItemIcon>
-              <LogoutIcon color="error" />
+              <LogoutIcon sx={{ color: '#e53935' }} />
             </ListItemIcon>
             <ListItemText primary="Logout" />
           </ListItemButton>
@@ -88,39 +106,43 @@ const Navbar = ({ onMenuSelect }) => {
         position="sticky"
         elevation={0}
         sx={{
-          backgroundColor: '#ffffff',
-          borderBottom: '1px solid #e1f5fe',
+          background: 'linear-gradient(135deg, #ffffff, #e9fffb)',
+          borderBottom: '1px solid #c8f4ec',
         }}
       >
         <Toolbar>
           <IconButton
             edge="start"
-            color="inherit"
             aria-label="menu"
             onClick={toggleDrawer(true)}
-            sx={{ mr: 2, color: '#0288d1' }}
+            sx={{ mr: 2, color: '#0f9f9a' }}
           >
             <MenuIcon />
           </IconButton>
-          <LocalPharmacyIcon
-            sx={{
-              mr: 1,
-              fontSize: 24,
-              color: '#0288d1',
+
+          <img
+            src={logo}
+            alt="EOPS Logo"
+            style={{
+              width: 105,
+              maxHeight: 38,
+              objectFit: 'contain',
+              marginRight: 12,
             }}
           />
+
           <Typography
             variant="h6"
             component="h1"
             sx={{
               flexGrow: 1,
-              fontWeight: 800,
-              color: '#01579b',
-              letterSpacing: '0.02em',
-              fontSize: '0.9rem', // Smaller font
+              fontWeight: 900,
+              color: '#0f9f9a',
+              letterSpacing: '0.04em',
+              fontSize: '0.95rem',
             }}
           >
-            E-MEDIX GYAN CENTER
+            EMEDIX GC
           </Typography>
 
           <Button
@@ -128,21 +150,20 @@ const Navbar = ({ onMenuSelect }) => {
             onClick={handleLogout}
             startIcon={<LogoutIcon sx={{ fontSize: 18 }} />}
             sx={{
-              color: '#0277bd',
+              color: '#0f9f9a',
               textTransform: 'none',
-              fontWeight: 700,
-              fontSize: '0.8rem',
+              fontWeight: 800,
+              fontSize: '0.85rem',
               '&:hover': {
-                backgroundColor: '#e1f5fe',
+                backgroundColor: '#dffaf5',
               },
             }}
           >
             Logout
           </Button>
-
-
         </Toolbar>
       </AppBar>
+
       <Drawer anchor="left" open={drawerOpen} onClose={toggleDrawer(false)}>
         {drawerContent}
       </Drawer>

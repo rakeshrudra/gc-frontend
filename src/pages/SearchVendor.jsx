@@ -119,17 +119,30 @@ const SearchVendor = ({ results = [] }) => {
 
     return (
         <Box>
-            <Paper sx={{ p: 2, mb: 2 }}>
-                <Box display="flex" gap={2} flexWrap="wrap" justifyContent="space-between">
+            <Paper
+                sx={{
+                    p: 2,
+                    mb: 2,
+                    borderRadius: 2,
+                    boxShadow: 'none',
+                    border: '1px solid #e0e0e0',
+                }}
+            >
+                <Box
+                    display="flex"
+                    gap={1}
+                    flexWrap="wrap"
+                    alignItems="center"
+                >
                     <TextField
                         size="small"
                         placeholder="Search vendor, medicine, company, bill no, batch..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        sx={{ minWidth: 400 }}
+                        sx={{ minWidth: 420 }}
                     />
 
-                    <FormControl size="small" sx={{ minWidth: 200 }}>
+                    <FormControl size="small" sx={{ minWidth: 220 }}>
                         <Select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
                             <MenuItem value="vendor_asc">Vendor A-Z</MenuItem>
                             <MenuItem value="vendor_desc">Vendor Z-A</MenuItem>
@@ -142,23 +155,25 @@ const SearchVendor = ({ results = [] }) => {
                         </Select>
                     </FormControl>
 
-                    <Box display="flex" gap={1} flexWrap="wrap">
-                        <Chip label={`Vendors: ${vendorCount}`} />
-                        <Chip label={`Rows: ${tableRows.length}`} />
+                    <Chip label={`Vendors: ${vendorCount}`} />
+                    <Chip label={`Rows: ${tableRows.length}`} />
 
-                        <Button
-                            variant="contained"
-                            size="small"
-                            onClick={exportToExcel}
-                            sx={{
-                                backgroundColor: '#2e7d32',
-                                textTransform: 'none',
-                                fontWeight: 700,
-                            }}
-                        >
-                            Export Excel
-                        </Button>
-                    </Box>
+                    <Button
+                        variant="contained"
+                        size="small"
+                        onClick={exportToExcel}
+                        sx={{
+                            backgroundColor: '#2e7d32',
+                            textTransform: 'none',
+                            fontWeight: 700,
+                            px: 2,
+                            '&:hover': {
+                                backgroundColor: '#1b5e20',
+                            },
+                        }}
+                    >
+                        Export Excel
+                    </Button>
                 </Box>
             </Paper>
 
