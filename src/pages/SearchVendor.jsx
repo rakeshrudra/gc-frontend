@@ -30,6 +30,51 @@ const formatDate = (value) => {
     return date.toLocaleDateString('en-IN');
 };
 
+const getSortText = (value) => {
+    if (value === null || value === undefined) return '';
+    return String(value).trim().toLowerCase();
+};
+
+const getSortNumber = (value) => {
+    if (value === null || value === undefined || value === '') return 0;
+
+    const num = Number(String(value).replace(/[^\d.-]/g, ''));
+
+    return Number.isNaN(num) ? 0 : num;
+};
+
+const getSortTime = (value) => {
+    if (!value) return 0;
+
+    if (value instanceof Date) {
+        return Number.isNaN(value.getTime()) ? 0 : value.getTime();
+    }
+
+    if (typeof value === 'number') {
+        return new Date((value - 25569) * 86400 * 1000).getTime();
+    }
+
+    const text = String(value).trim();
+
+    const indianDateMatch = text.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+
+    if (indianDateMatch) {
+        const [, day, month, year] = indianDateMatch;
+        return new Date(Number(year), Number(month) - 1, Number(day)).getTime();
+    }
+
+    const date = new Date(text);
+
+    return Number.isNaN(date.getTime()) ? 0 : date.getTime();
+};
+
+const compareText = (a, b) => {
+    return getSortText(a).localeCompare(getSortText(b), undefined, {
+        numeric: true,
+        sensitivity: 'base',
+    });
+};
+
 const SearchVendor = ({ results = [] }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [sortBy, setSortBy] = useState('vendor_asc');
@@ -60,31 +105,53 @@ const SearchVendor = ({ results = [] }) => {
         });
 
         rows = [...rows].sort((a, b) => {
-            if (sortBy === 'vendor_asc')
-                return String(a.vendor_name || '').localeCompare(String(b.vendor_name || ''));
+            let result = 0;
 
-            if (sortBy === 'vendor_desc')
-                return String(b.vendor_name || '').localeCompare(String(a.vendor_name || ''));
+            if (sortBy === 'vendor_asc') {
+                result = compareText(a.vendor_name, b.vendor_name);
+            }
 
-            if (sortBy === 'discount_high')
-                return Number(b.disc || 0) - Number(a.disc || 0);
+            if (sortBy === 'vendor_desc') {
+                result = compareText(b.vendor_name, a.vendor_name);
+            }
 
-            if (sortBy === 'discount_low')
-                return Number(a.disc || 0) - Number(b.disc || 0);
+            if (sortBy === 'discount_high') {
+                result = getSortNumber(b.disc) - getSortNumber(a.disc);
+            }
 
-            if (sortBy === 'medicine_asc')
-                return String(a.matchedProduct || '').localeCompare(String(b.matchedProduct || ''));
+            if (sortBy === 'discount_low') {
+                result = getSortNumber(a.disc) - getSortNumber(b.disc);
+            }
 
-            if (sortBy === 'company_asc')
-                return String(a.matchedCompany || '').localeCompare(String(b.matchedCompany || ''));
+            if (sortBy === 'medicine_asc') {
+                result = compareText(
+                    a.matchedProduct || a.Particulars,
+                    b.matchedProduct || b.Particulars
+                );
+            }
 
-            if (sortBy === 'date_new')
-                return new Date(b.date || 0) - new Date(a.date || 0);
+            if (sortBy === 'company_asc') {
+                result = compareText(
+                    a.matchedCompany || a.Company,
+                    b.matchedCompany || b.Company
+                );
+            }
 
-            if (sortBy === 'date_old')
-                return new Date(a.date || 0) - new Date(b.date || 0);
+            if (sortBy === 'date_new') {
+                result = getSortTime(b.date) - getSortTime(a.date);
+            }
 
-            return 0;
+            if (sortBy === 'date_old') {
+                result = getSortTime(a.date) - getSortTime(b.date);
+            }
+
+            if (result !== 0) return result;
+
+            return (
+                compareText(a.vendor_name, b.vendor_name) ||
+                getSortNumber(a.SNo) - getSortNumber(b.SNo) ||
+                compareText(a.Particulars, b.Particulars)
+            );
         });
 
         return rows;
