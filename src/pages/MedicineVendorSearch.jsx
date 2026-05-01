@@ -62,8 +62,6 @@ const MedicineVendorSearch = () => {
   };
 
   useEffect(() => {
-    if (selectedMedicine) return undefined;
-
     const trimmed = searchQuery.trim();
     if (!trimmed) {
       setMedicines([]);
@@ -77,7 +75,7 @@ const MedicineVendorSearch = () => {
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [searchQuery, selectedMedicine]);
+  }, [searchQuery]);
 
   const vendors = useMemo(() => {
     const rawVendors =
@@ -108,6 +106,16 @@ const MedicineVendorSearch = () => {
     return sorted;
   }, [selectedMedicine, sortBy]);
 
+  const handleSearchChange = (event) => {
+    setSearchQuery(event.target.value);
+    setSelectedMedicine(null);
+  };
+
+  const handleManualSearch = () => {
+    setSelectedMedicine(null);
+    runSearch(searchQuery);
+  };
+
   const handleBackToResults = () => {
     setSelectedMedicine(null);
   };
@@ -131,7 +139,7 @@ const MedicineVendorSearch = () => {
             fullWidth
             size="small"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={handleSearchChange}
             placeholder="Type medicine or vendor name"
             sx={{
               '& .MuiInputBase-input': {
@@ -142,7 +150,7 @@ const MedicineVendorSearch = () => {
           />
           <Button
             variant="contained"
-            onClick={() => runSearch(searchQuery)}
+            onClick={handleManualSearch}
             disabled={loading || !hasQuery}
             sx={{
               width: { xs: 'fit-content', sm: 'fit-content' },
