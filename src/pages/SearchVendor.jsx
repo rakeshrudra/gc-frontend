@@ -187,6 +187,7 @@ const SearchVendor = ({ results = [] }) => {
     return (
         <Box>
             <Paper
+                className="no-print"
                 sx={{
                     p: 2,
                     mb: 2,
@@ -244,8 +245,8 @@ const SearchVendor = ({ results = [] }) => {
                 </Box>
             </Paper>
 
-            <TableContainer component={Paper}>
-                <Table size="small" stickyHeader>
+            <TableContainer component={Paper} className="print-table-container">
+                <Table size="small" stickyHeader className="print-table">
                     <TableHead>
                         <TableRow>
                             {[

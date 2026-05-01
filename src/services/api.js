@@ -58,4 +58,11 @@ export const getVendorwiseResults = async (results) => {
   return response.data;
 };
 
+export const searchMasterMedicines = async (query) => {
+  const response = await api.get('/match/search-master', {
+    params: { query },
+  });
+  return response.data;
+};
+
 export default api;

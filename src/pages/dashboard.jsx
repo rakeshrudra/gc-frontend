@@ -7,6 +7,7 @@ import Navbar from '../components/Navbar';
 import Upload from '../components/Upload';
 import ResultsTable from '../components/Table';
 import VendorSearch from './SearchVendor';
+import MedicineVendorSearch from './MedicineVendorSearch';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -113,6 +114,7 @@ const Dashboard = () => {
 
             <Box
               ref={reportRef}
+              className="print-area"
               sx={{
                 backgroundColor: '#ffffff',
                 p: 1,
@@ -146,7 +148,7 @@ const Dashboard = () => {
 
               {results.length > 0 && (
                 <Box>
-                  <Box sx={{ display: 'flex', mb: 1.5, gap: 1 }}>
+                  <Box sx={{ display: 'flex', mb: 1.5, gap: 1 }} className="no-print">
                     <Typography sx={{ flexGrow: 1 }}>
                       {showVendorwise
                         ? 'VENDORWISE REPORT'
@@ -181,6 +183,10 @@ const Dashboard = () => {
               )}
             </Box>
           </>
+        )}
+
+        {view === 'searchMaster' && (
+          <MedicineVendorSearch />
         )}
       </Container>
     </Box>

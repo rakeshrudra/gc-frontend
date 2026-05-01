@@ -17,7 +17,7 @@ import {
 import MenuIcon from '@mui/icons-material/Menu';
 import LogoutIcon from '@mui/icons-material/Logout';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutlined';
-import { useNavigate } from 'react-router-dom';
+import SearchIcon from '@mui/icons-material/Search';
 import logo from '../assets/eops-logo.png';
 
 const Navbar = ({ onMenuSelect }) => {
@@ -77,7 +77,22 @@ const Navbar = ({ onMenuSelect }) => {
             <ListItemText
               primary={
                 <Typography sx={{ fontWeight: 600, fontSize: '0.9rem' }}>
-                  YES/MAYBE
+                  Upload & Match Medicines
+                </Typography>
+              }
+            />
+          </ListItemButton>
+        </ListItem>
+
+        <ListItem disablePadding>
+          <ListItemButton onClick={() => handleMenuClick('searchMaster')}>
+            <ListItemIcon>
+              <SearchIcon sx={{ color: '#0f9f9a' }} />
+            </ListItemIcon>
+            <ListItemText
+              primary={
+                <Typography sx={{ fontWeight: 600, fontSize: '0.9rem' }}>
+                  Search medicines and vendors
                 </Typography>
               }
             />

@@ -111,7 +111,7 @@ const ResultsTable = ({ data }) => {
 
   return (
     <Box>
-      <Box sx={{ mb: 1.5, display: 'flex', justifyContent: 'flex-end' }}>
+      <Box sx={{ mb: 1.5, display: 'flex', justifyContent: 'flex-end' }} className="no-print">
         <Button
           onClick={exportToExcel}
           variant="contained"
@@ -126,8 +126,8 @@ const ResultsTable = ({ data }) => {
         </Button>
       </Box>
 
-      <TableContainer component={Paper}>
-        <MuiTable size="small" stickyHeader>
+      <TableContainer component={Paper} className="print-table-container">
+        <MuiTable size="small" stickyHeader className="print-table">
           <TableHead>
             <TableRow>
               {columns.map((col) => (
