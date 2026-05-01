@@ -23,11 +23,15 @@ import {
 } from '@mui/material';
 import { searchMasterMedicines } from '../services/api';
 
-const formatDate = (value) => {
+const formatHumanDate = (value) => {
   if (!value) return '-';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return String(value);
-  return date.toLocaleDateString('en-IN');
+  return date.toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
 };
 
 const MedicineVendorSearch = () => {
@@ -274,7 +278,7 @@ const MedicineVendorSearch = () => {
                   vendors.map((vendor, idx) => (
                     <TableRow key={`${vendor.vendor_name || 'vendor'}-${idx}`}>
                       <TableCell>{vendor.billno || '-'}</TableCell>
-                      <TableCell>{formatDate(vendor.date)}</TableCell>
+                      <TableCell>{formatHumanDate(vendor.date)}</TableCell>
                       <TableCell>{vendor.disc ?? '-'}</TableCell>
                       <TableCell>{vendor.vendor_name || '-'}</TableCell>
                     </TableRow>

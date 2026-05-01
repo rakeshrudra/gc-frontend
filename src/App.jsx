@@ -1,9 +1,11 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { createTheme, ThemeProvider, CssBaseline } from '@mui/material';
+import { Box, Container, createTheme, ThemeProvider, CssBaseline } from '@mui/material';
 import Login from './pages/login';
 import Dashboard from './pages/dashboard';
-import VendorSearch from './pages/SearchVendor';
+import Home from './pages/Home';
+import MedicineVendorSearch from './pages/MedicineVendorSearch';
+import Navbar from './components/Navbar';
 
 const theme = createTheme({
   typography: {
@@ -72,8 +74,34 @@ function App() {
       <CssBaseline />
       <Routes>
         <Route path="/" element={<Login />} />
+        <Route
+          path="/home"
+          element={
+            <ProtectedRoute>
+              <Box sx={{ minHeight: '100vh', background: '#f4fdfc' }}>
+                <Navbar />
+                <Container maxWidth="xl" sx={{ py: 3 }}>
+                  <Home />
+                </Container>
+              </Box>
+            </ProtectedRoute>
+          }
+        />
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-        <Route path="/vendorsearch" element={<ProtectedRoute><VendorSearch /></ProtectedRoute>} />
+        <Route
+          path="/medicine-vendor-search"
+          element={
+            <ProtectedRoute>
+              <Box sx={{ minHeight: '100vh', background: '#f4fdfc' }}>
+                <Navbar />
+                <Container maxWidth="xl" sx={{ py: 3 }}>
+                  <MedicineVendorSearch />
+                </Container>
+              </Box>
+            </ProtectedRoute>
+          }
+        />
+        <Route path="/vendorsearch" element={<Navigate to="/dashboard" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </ThemeProvider>

@@ -23,11 +23,15 @@ const safeText = (value) => {
     return text === '' ? '—' : text;
 };
 
-const formatDate = (value) => {
+const formatHumanDate = (value) => {
     if (!value) return '—';
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return safeText(value);
-    return date.toLocaleDateString('en-IN');
+    return date.toLocaleDateString('en-GB', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+    });
 };
 
 const getSortText = (value) => {
@@ -173,7 +177,7 @@ const SearchVendor = ({ results = [] }) => {
             Discount: row.disc ?? '',
             'Bill No': row.billno || '',
             'Batch No': row.batch_no || '',
-            Date: formatDate(row.date),
+            Date: formatHumanDate(row.date),
             Status: String(row.decision || 'no').toUpperCase(),
         }));
 
@@ -281,7 +285,7 @@ const SearchVendor = ({ results = [] }) => {
                                 <TableCell>{safeText(row.disc)}</TableCell>
                                 <TableCell>{safeText(row.billno)}</TableCell>
                                 <TableCell>{safeText(row.batch_no)}</TableCell>
-                                <TableCell>{formatDate(row.date)}</TableCell>
+                                <TableCell>{formatHumanDate(row.date)}</TableCell>
 
                                 <TableCell>
                                     <Box

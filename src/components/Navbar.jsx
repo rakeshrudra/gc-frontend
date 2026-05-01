@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   AppBar,
   Toolbar,
@@ -16,12 +17,18 @@ import {
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import LogoutIcon from '@mui/icons-material/Logout';
+import HomeIcon from '@mui/icons-material/Home';
+import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutlined';
 import SearchIcon from '@mui/icons-material/Search';
 import logo from '../assets/eops-logo.png';
 
 const Navbar = ({ onMenuSelect }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [drawerOpen, setDrawerOpen] = useState(false);
+
+  const isHomePage = location.pathname === '/home';
 
   const handleLogout = () => {
     sessionStorage.clear();
@@ -36,9 +43,14 @@ const Navbar = ({ onMenuSelect }) => {
     setDrawerOpen(open);
   };
 
-  const handleMenuClick = (view) => {
-    if (onMenuSelect) onMenuSelect(view);
+  const handleMenuClick = (route, view) => {
+    if (onMenuSelect && view) onMenuSelect(view);
+    if (route) navigate(route);
     setDrawerOpen(false);
+  };
+
+  const handleHomeClick = () => {
+    navigate('/home');
   };
 
   const drawerContent = (
@@ -70,14 +82,14 @@ const Navbar = ({ onMenuSelect }) => {
 
       <List>
         <ListItem disablePadding>
-          <ListItemButton onClick={() => handleMenuClick('match')}>
+          <ListItemButton onClick={() => handleMenuClick('/home')}>
             <ListItemIcon>
-              <CheckCircleOutlineIcon sx={{ color: '#16a085' }} />
+              <HomeOutlinedIcon sx={{ color: '#0f9f9a' }} />
             </ListItemIcon>
             <ListItemText
               primary={
                 <Typography sx={{ fontWeight: 600, fontSize: '0.9rem' }}>
-                  Upload & Match Medicines
+                  Home
                 </Typography>
               }
             />
@@ -85,14 +97,29 @@ const Navbar = ({ onMenuSelect }) => {
         </ListItem>
 
         <ListItem disablePadding>
-          <ListItemButton onClick={() => handleMenuClick('searchMaster')}>
+          <ListItemButton onClick={() => handleMenuClick('/dashboard', 'match')}>
+            <ListItemIcon>
+              <CheckCircleOutlineIcon sx={{ color: '#16a085' }} />
+            </ListItemIcon>
+            <ListItemText
+              primary={
+                <Typography sx={{ fontWeight: 600, fontSize: '0.9rem' }}>
+                  YES/MAYBE Report
+                </Typography>
+              }
+            />
+          </ListItemButton>
+        </ListItem>
+
+        <ListItem disablePadding>
+          <ListItemButton onClick={() => handleMenuClick('/medicine-vendor-search', 'searchMaster')}>
             <ListItemIcon>
               <SearchIcon sx={{ color: '#0f9f9a' }} />
             </ListItemIcon>
             <ListItemText
               primary={
                 <Typography sx={{ fontWeight: 600, fontSize: '0.9rem' }}>
-                  Search medicines and vendors
+                  Search Medicines and Vendors
                 </Typography>
               }
             />
@@ -159,6 +186,42 @@ const Navbar = ({ onMenuSelect }) => {
           >
             EMEDIX GC
           </Typography>
+
+          {!isHomePage && (
+            <>
+              <Button
+                onClick={handleHomeClick}
+                startIcon={<HomeIcon sx={{ fontSize: 18 }} />}
+                sx={{
+                  color: '#0f9f9a',
+                  textTransform: 'none',
+                  fontWeight: 800,
+                  fontSize: '0.85rem',
+                  mr: 1,
+                  display: { xs: 'none', sm: 'inline-flex' },
+                  '&:hover': {
+                    backgroundColor: '#dffaf5',
+                  },
+                }}
+              >
+                Home
+              </Button>
+
+              <IconButton
+                onClick={handleHomeClick}
+                sx={{
+                  color: '#0f9f9a',
+                  mr: 1,
+                  display: { xs: 'inline-flex', sm: 'none' },
+                  '&:hover': {
+                    backgroundColor: '#dffaf5',
+                  },
+                }}
+              >
+                <HomeIcon />
+              </IconButton>
+            </>
+          )}
 
           <Button
             id="logout-button"

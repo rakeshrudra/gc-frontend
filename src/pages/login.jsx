@@ -22,7 +22,7 @@ const Login = () => {
   React.useEffect(() => {
     const token = sessionStorage.getItem('token');
     if (token) {
-      navigate('/dashboard', { replace: true });
+      navigate('/home', { replace: true });
     }
   }, [navigate]);
 
@@ -37,7 +37,7 @@ const Login = () => {
     try {
       const data = await loginUser(username, password);
       sessionStorage.setItem('token', data.accessToken);
-      navigate('/dashboard', { replace: true });
+      navigate('/home', { replace: true });
     } catch (err) {
       const msg = err.response?.data?.message || 'Invalid credentials. Please try again.';
       setError(msg);
