@@ -9,8 +9,14 @@ const api = axios.create({
 // Attach JWT token to every request automatically
 api.interceptors.request.use(
   (config) => {
+    const url = config.url || '';
+    const isLogin = url.includes('/admins/login');
+    if (isLogin) {
+      delete config.headers.Authorization;
+      return config;
+    }
     const token = sessionStorage.getItem('token');
-    if (token) {
+    if (token && token !== 'undefined' && token !== 'null') {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
@@ -22,7 +28,10 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response && error.response.status === 401) {
+    const status = error.response?.status;
+    const url = error.config?.url || '';
+    const isLogin = url.includes('/admins/login');
+    if (status === 401 && !isLogin) {
       sessionStorage.clear();
       window.location.href = '/';
     }

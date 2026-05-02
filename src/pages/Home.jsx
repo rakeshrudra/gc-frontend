@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Paper,
@@ -6,11 +7,14 @@ import {
   Stack,
   Card,
   CardContent,
+  CardActionArea,
 } from '@mui/material';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import SearchIcon from '@mui/icons-material/Search';
 
 const Home = () => {
+  const navigate = useNavigate();
+
   return (
     <Box
       sx={{
@@ -53,7 +57,7 @@ const Home = () => {
             mb: 3,
           }}
         >
-          Go to the menu and select the option you want to use.
+          Click a card below to get started, or use the menu in the top left.
         </Typography>
 
         <Stack
@@ -68,22 +72,33 @@ const Home = () => {
               borderRadius: 3,
               borderColor: '#d1f0ed',
               backgroundColor: '#f8fffe',
+              transition: 'box-shadow 0.2s ease, border-color 0.2s ease',
+              '&:hover': {
+                borderColor: '#0f9f9a',
+                boxShadow: '0 6px 20px rgba(15, 159, 154, 0.15)',
+              },
             }}
           >
-            <CardContent>
-              <UploadFileIcon sx={{ color: '#0f9f9a', fontSize: 36, mb: 1 }} />
+            <CardActionArea
+              onClick={() => navigate('/dashboard')}
+              sx={{ borderRadius: 3, textAlign: 'left' }}
+              aria-label="Open YES MAYBE report upload"
+            >
+              <CardContent>
+                <UploadFileIcon sx={{ color: '#0f9f9a', fontSize: 36, mb: 1 }} />
 
-              <Typography fontWeight={800} color="#113b4a">
-                YES/MAYBE Report
-              </Typography>
+                <Typography fontWeight={800} color="#113b4a">
+                  YES/MAYBE Report
+                </Typography>
 
-              <Typography
-                variant="body2"
-                sx={{ color: '#607d8b', mt: 0.8 }}
-              >
-                Upload Excel or CSV file and view medicine matching results.
-              </Typography>
-            </CardContent>
+                <Typography
+                  variant="body2"
+                  sx={{ color: '#607d8b', mt: 0.8 }}
+                >
+                  Upload Excel or CSV file and view medicine matching results.
+                </Typography>
+              </CardContent>
+            </CardActionArea>
           </Card>
 
           <Card
@@ -93,22 +108,33 @@ const Home = () => {
               borderRadius: 3,
               borderColor: '#d1f0ed',
               backgroundColor: '#f8fffe',
+              transition: 'box-shadow 0.2s ease, border-color 0.2s ease',
+              '&:hover': {
+                borderColor: '#0f9f9a',
+                boxShadow: '0 6px 20px rgba(15, 159, 154, 0.15)',
+              },
             }}
           >
-            <CardContent>
-              <SearchIcon sx={{ color: '#0f9f9a', fontSize: 36, mb: 1 }} />
+            <CardActionArea
+              onClick={() => navigate('/medicine-vendor-search')}
+              sx={{ borderRadius: 3, textAlign: 'left' }}
+              aria-label="Open search medicines and vendors"
+            >
+              <CardContent>
+                <SearchIcon sx={{ color: '#0f9f9a', fontSize: 36, mb: 1 }} />
 
-              <Typography fontWeight={800} color="#113b4a">
-                Search Medicines & Vendors
-              </Typography>
+                <Typography fontWeight={800} color="#113b4a">
+                  Search Medicines & Vendors
+                </Typography>
 
-              <Typography
-                variant="body2"
-                sx={{ color: '#607d8b', mt: 0.8 }}
-              >
-                Search master data and view vendor bill, date, and discount.
-              </Typography>
-            </CardContent>
+                <Typography
+                  variant="body2"
+                  sx={{ color: '#607d8b', mt: 0.8 }}
+                >
+                  Search master data and view vendor bill, date, and discount.
+                </Typography>
+              </CardContent>
+            </CardActionArea>
           </Card>
         </Stack>
 
@@ -119,7 +145,7 @@ const Home = () => {
             color: '#78909c',
           }}
         >
-          Use the menu icon on the top left to continue.
+          The menu has the same options anytime.
         </Typography>
       </Paper>
     </Box>

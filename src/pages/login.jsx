@@ -26,8 +26,7 @@ const Login = () => {
     }
   }, [navigate]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const performLogin = async () => {
     if (!username.trim() || !password.trim()) {
       setError('Please fill in all fields');
       return;
@@ -36,14 +35,36 @@ const Login = () => {
     setError('');
     try {
       const data = await loginUser(username, password);
-      sessionStorage.setItem('token', data.accessToken);
+      const token =
+        data?.accessToken ??
+        data?.access_token ??
+        data?.data?.accessToken ??
+        data?.data?.access_token;
+
+      if (!token || typeof token !== 'string') {
+        setError('Login succeeded but no token was returned. Check API configuration.');
+        return;
+      }
+
+      sessionStorage.setItem('token', token);
       navigate('/home', { replace: true });
-    } catch (err) {
-      const msg = err.response?.data?.message || 'Invalid credentials. Please try again.';
-      setError(msg);
+    } catch {
+      setError('Invalid credentials. Please try again.');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    await performLogin();
+  };
+
+  /** MUI password adornment can swallow implicit form submit on Enter; submit explicitly */
+  const handleFieldKeyDown = (e) => {
+    if (e.key !== 'Enter' || loading) return;
+    e.preventDefault();
+    void performLogin();
   };
 
   return (
@@ -120,6 +141,7 @@ const Login = () => {
             label="Username"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
+            onKeyDown={handleFieldKeyDown}
             autoFocus
             slotProps={{
               input: {
@@ -154,6 +176,7 @@ const Login = () => {
             type={showPassword ? 'text' : 'password'}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            onKeyDown={handleFieldKeyDown}
             slotProps={{
               input: {
                 startAdornment: (
@@ -163,7 +186,12 @@ const Login = () => {
                 ),
                 endAdornment: (
                   <InputAdornment position="end">
-                    <IconButton onClick={() => setShowPassword(!showPassword)} size="small">
+                    <IconButton
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      size="small"
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    >
                       {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
                     </IconButton>
                   </InputAdornment>
