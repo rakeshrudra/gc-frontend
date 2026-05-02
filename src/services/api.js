@@ -65,4 +65,13 @@ export const searchMasterMedicines = async (query) => {
   return response.data;
 };
 
+export const resetAdminPassword = async ({ currentPassword, newPassword }) => {
+  const response = await api.post('/admins/reset-password', {
+    currentPassword,
+    newPassword,
+  });
+
+  return response.data;
+};
+
 export default api;

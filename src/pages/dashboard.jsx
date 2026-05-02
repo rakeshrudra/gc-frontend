@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, Container, Typography, Paper, Button } from '@mui/material';
+import { Box, Container, Typography, Paper, Button, Stack, Chip } from '@mui/material';
 import axios from 'axios';
 
 import Navbar from '../components/Navbar';
@@ -8,6 +8,57 @@ import Upload from '../components/Upload';
 import ResultsTable from '../components/Table';
 import VendorSearch from './SearchVendor';
 import MedicineVendorSearch from './MedicineVendorSearch';
+
+const getNumberValue = (value) => {
+  if (value === null || value === undefined || value === '') return null;
+
+  const num = Number(String(value).replace(/[^\d.-]/g, ''));
+
+  return Number.isNaN(num) ? null : num;
+};
+
+const getRowMrp = (row) => {
+  if (row.mrp !== null && row.mrp !== undefined && row.mrp !== '') {
+    return getNumberValue(row.mrp);
+  }
+
+  if (Array.isArray(row.uniqueVendors) && row.uniqueVendors.length > 0) {
+    const firstVendorWithMrp = row.uniqueVendors.find((vendor) => {
+      if (typeof vendor === 'string') return false;
+      return vendor?.mrp !== null && vendor?.mrp !== undefined && vendor?.mrp !== '';
+    });
+
+    if (firstVendorWithMrp) {
+      return getNumberValue(firstVendorWithMrp.mrp);
+    }
+  }
+
+  return null;
+};
+
+const getRowQty = (row) => {
+  return getNumberValue(row['Qty.'] ?? row.Qty);
+};
+
+const getCalculatedAmount = (row) => {
+  const mrp = getRowMrp(row);
+  const qty = getRowQty(row);
+
+  if (mrp === null || qty === null) return null;
+
+  return mrp * qty;
+};
+
+const formatAmount = (value) => {
+  const num = getNumberValue(value);
+
+  if (num === null) return '0.00';
+
+  return num.toLocaleString('en-IN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+};
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -36,6 +87,11 @@ const Dashboard = () => {
 
   const handleMenuSelect = (selectedView) => setView(selectedView);
   const handlePrint = () => window.print();
+
+  const totalUploadAmount = results.reduce((sum, row) => {
+    const amount = getCalculatedAmount(row);
+    return amount === null ? sum : sum + amount;
+  }, 0);
 
   // ✅ FIXED FUNCTION WITH TOKEN
   const handleVendorwiseToggle = async () => {
@@ -117,7 +173,7 @@ const Dashboard = () => {
               className="print-area"
               sx={{
                 backgroundColor: '#ffffff',
-                p: 1,
+                p: { xs: 1, sm: 2 },
                 borderRadius: '14px',
                 border: '1px solid #d1f0ed',
               }}
@@ -148,28 +204,117 @@ const Dashboard = () => {
 
               {results.length > 0 && (
                 <Box>
-                  <Box sx={{ display: 'flex', mb: 1.5, gap: 1 }} className="no-print">
-                    <Typography sx={{ flexGrow: 1 }}>
-                      {showVendorwise
-                        ? 'VENDORWISE REPORT'
-                        : 'MATCHED RESULTS'}
-                    </Typography>
+                  <Paper
+                    elevation={0}
+                    className="no-print"
+                    sx={{
+                      mb: 2,
+                      p: 1.5,
+                      borderRadius: 2,
+                      border: '1px solid #e0f2f1',
+                      backgroundColor: '#fbfffe',
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: { xs: 'stretch', sm: 'center' },
+                        justifyContent: 'space-between',
+                        gap: 1.5,
+                        flexDirection: { xs: 'column', md: 'row' },
+                      }}
+                    >
+                      <Box>
+                        <Typography
+                          sx={{
+                            fontWeight: 800,
+                            color: '#113b4a',
+                            fontSize: '0.95rem',
+                          }}
+                        >
+                          {showVendorwise
+                            ? 'Vendorwise Results'
+                            : 'Matched Results'}
+                        </Typography>
 
-                    <Typography>
-                      TOTAL:{' '}
-                      {showVendorwise
-                        ? vendorwiseResults.length
-                        : results.length}
-                    </Typography>
+                        <Typography
+                          sx={{
+                            color: '#607d8b',
+                            fontSize: '0.78rem',
+                            mt: 0.3,
+                          }}
+                        >
+                          {showVendorwise
+                            ? 'Vendor grouped report from matched upload results'
+                            : 'Upload matching report with DB MRP and calculated amount'}
+                        </Typography>
+                      </Box>
 
-                    <Button onClick={handlePrint}>Print</Button>
+                      <Stack
+                        direction={{ xs: 'column', sm: 'row' }}
+                        spacing={1}
+                        alignItems={{ xs: 'stretch', sm: 'center' }}
+                        justifyContent="flex-end"
+                        flexWrap="wrap"
+                      >
+                        <Chip
+                          label={`Total Rows: ${showVendorwise ? vendorwiseResults.length : results.length}`}
+                          sx={{
+                            fontWeight: 800,
+                            backgroundColor: '#e9fffb',
+                            color: '#006c68',
+                          }}
+                        />
 
-                    <Button onClick={handleVendorwiseToggle}>
-                      {showVendorwise
-                        ? 'Show Normal Report'
-                        : 'Show Vendorwise'}
-                    </Button>
-                  </Box>
+                        {!showVendorwise && (
+                          <Chip
+                          label={`Total Amount: ₹${formatAmount(totalUploadAmount)}`}
+                            sx={{
+                              fontWeight: 800,
+                              backgroundColor: '#e8f5e9',
+                              color: '#1b5e20',
+                            }}
+                          />
+                        )}
+
+                        <Button
+                          onClick={handlePrint}
+                          variant="outlined"
+                          size="small"
+                          sx={{
+                            textTransform: 'none',
+                            fontWeight: 800,
+                            borderColor: '#0f9f9a',
+                            color: '#0f9f9a',
+                            '&:hover': {
+                              borderColor: '#0b827e',
+                              backgroundColor: '#e9fffb',
+                            },
+                          }}
+                        >
+                          Print
+                        </Button>
+
+                        <Button
+                          onClick={handleVendorwiseToggle}
+                          variant="contained"
+                          size="small"
+                          sx={{
+                            textTransform: 'none',
+                            fontWeight: 800,
+                            backgroundColor: '#0f9f9a',
+                            '&:hover': {
+                              backgroundColor: '#0b827e',
+                            },
+                          }}
+                        >
+                          {showVendorwise
+                            ? 'Show Normal Report'
+                            : 'Show Vendorwise'}
+                        </Button>
+                      </Stack>
+                    </Box>
+                  </Paper>
 
                   {showVendorwise ? (
                     <VendorSearch
@@ -177,7 +322,7 @@ const Dashboard = () => {
                       documentHeader={docHeader}
                     />
                   ) : (
-                    <ResultsTable data={results} />
+                    <ResultsTable data={results} documentHeader={docHeader} />
                   )}
                 </Box>
               )}

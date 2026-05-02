@@ -14,8 +14,9 @@ import {
     Select,
     FormControl,
     Button,
+    Typography,
 } from '@mui/material';
-import * as XLSX from 'xlsx';
+import * as XLSX from 'xlsx-js-style';
 
 const safeText = (value) => {
     if (value === null || value === undefined) return '—';
@@ -79,7 +80,24 @@ const compareText = (a, b) => {
     });
 };
 
-const SearchVendor = ({ results = [] }) => {
+/** Vendorwise Excel column count — order matches on-screen table */
+const VENDORWISE_EXCEL_COLS = 12;
+
+const vendorExcelBlankRow = () => Array(VENDORWISE_EXCEL_COLS).fill('');
+
+const getExcelNumericCell = (value) => {
+    if (value === null || value === undefined || value === '') return '';
+    const num = Number(String(value).replace(/[^\d.-]/g, ''));
+    return Number.isNaN(num) ? '' : Number(num.toFixed(2));
+};
+
+const excelDateString = (value) => {
+    if (!value) return '';
+    const formatted = formatHumanDate(value);
+    return formatted === '—' ? '' : formatted;
+};
+
+const SearchVendor = ({ results = [], documentHeader = null }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [sortBy, setSortBy] = useState('vendor_asc');
 
@@ -166,25 +184,163 @@ const SearchVendor = ({ results = [] }) => {
     }, [tableRows]);
 
     const exportToExcel = () => {
-        const exportRows = tableRows.map((row, index) => ({
-            'S.No': index + 1,
-            'Vendor Name': row.vendor_name || '',
-            Particulars: row.Particulars || '',
-            'Matched Product': row.matchedProduct || '',
-            Company: row.Company || '',
-            'Matched Company': row.matchedCompany || '',
-            MRP: row.mrp ?? '',
-            Discount: row.disc ?? '',
-            'Bill No': row.billno || '',
-            'Batch No': row.batch_no || '',
-            Date: formatHumanDate(row.date),
-            Status: String(row.decision || 'no').toUpperCase(),
-        }));
+        const headerLines = Array.isArray(documentHeader?.lines)
+            ? documentHeader.lines.map((line) => (line == null ? '' : String(line)))
+            : [];
 
-        const worksheet = XLSX.utils.json_to_sheet(exportRows);
+        const tableHeader = [
+            'Vendor Name',
+            'S.No',
+            'Particulars',
+            'Matched Product',
+            'Company',
+            'Matched Company',
+            'MRP',
+            'Discount',
+            'Bill No',
+            'Batch No',
+            'Date',
+            'Status',
+        ];
+
+        const totalColumns = tableHeader.length;
+
+        const tableData = tableRows.map((row, index) => {
+            const sNo =
+                row.SNo !== undefined &&
+                row.SNo !== null &&
+                String(row.SNo).trim() !== ''
+                    ? row.SNo
+                    : index + 1;
+
+            return [
+                row.vendor_name || '',
+                sNo,
+                row.Particulars || '',
+                row.matchedProduct || '',
+                row.Company || '',
+                row.matchedCompany || '',
+                getExcelNumericCell(row.mrp),
+                getExcelNumericCell(row.disc),
+                row.billno || '',
+                row.batch_no || '',
+                excelDateString(row.date),
+                String(row.decision || 'no').toUpperCase(),
+            ];
+        });
+
+        const docRowsForSheet = headerLines.map((line) => {
+            const row = vendorExcelBlankRow();
+            row[0] = line;
+            return row;
+        });
+
+        const titleRow = vendorExcelBlankRow();
+        titleRow[0] = 'VENDORWISE REPORT';
+
+        const worksheetData = [
+            ...docRowsForSheet,
+            vendorExcelBlankRow(),
+            titleRow,
+            vendorExcelBlankRow(),
+            tableHeader,
+            ...tableData,
+        ];
+
+        const ws = XLSX.utils.aoa_to_sheet(worksheetData);
+
+        const docLineCount = headerLines.length;
+        const reportTitleRowIndex = docLineCount + 1;
+        const tableHeaderRowIndex = docLineCount + 3;
+        const firstDataRowIndex = docLineCount + 4;
+        const lastRowIndex = worksheetData.length - 1;
+        const lastColIndex = totalColumns - 1;
+
+        ws['!merges'] = [
+            ...headerLines.map((_, index) => ({
+                s: { r: index, c: 0 },
+                e: { r: index, c: lastColIndex },
+            })),
+            {
+                s: { r: reportTitleRowIndex, c: 0 },
+                e: { r: reportTitleRowIndex, c: lastColIndex },
+            },
+        ];
+
+        ws['!cols'] = [
+            { wch: 24 },
+            { wch: 8 },
+            { wch: 28 },
+            { wch: 28 },
+            { wch: 18 },
+            { wch: 22 },
+            { wch: 12 },
+            { wch: 12 },
+            { wch: 14 },
+            { wch: 14 },
+            { wch: 12 },
+            { wch: 10 },
+        ];
+
+        const styleDocHeaderCell = {
+            font: { bold: true },
+            alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+        };
+
+        const styleTitleCell = {
+            font: { bold: true, sz: 14 },
+            alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+        };
+
+        const styleTableHeaderCell = {
+            font: { bold: true },
+            alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+            fill: {
+                patternType: 'solid',
+                fgColor: { rgb: 'FFD9E1F2' },
+            },
+        };
+
+        const wrapTextDataColumnIndexes = [0, 2, 3, 4, 5];
+
+        for (let r = 0; r < docLineCount; r++) {
+            for (let c = 0; c < totalColumns; c++) {
+                const ref = XLSX.utils.encode_cell({ r, c });
+                if (!ws[ref]) continue;
+                ws[ref].s = { ...styleDocHeaderCell };
+            }
+        }
+
+        for (let c = 0; c < totalColumns; c++) {
+            const ref = XLSX.utils.encode_cell({ r: reportTitleRowIndex, c });
+            if (!ws[ref]) continue;
+            ws[ref].s = { ...styleTitleCell };
+        }
+
+        for (let c = 0; c < totalColumns; c++) {
+            const ref = XLSX.utils.encode_cell({ r: tableHeaderRowIndex, c });
+            if (!ws[ref]) continue;
+            ws[ref].s = { ...styleTableHeaderCell };
+        }
+
+        for (let r = firstDataRowIndex; r <= lastRowIndex; r++) {
+            for (const c of wrapTextDataColumnIndexes) {
+                const ref = XLSX.utils.encode_cell({ r, c });
+                if (!ws[ref]) continue;
+                const prev = ws[ref].s || {};
+                ws[ref].s = {
+                    ...prev,
+                    alignment: {
+                        ...prev.alignment,
+                        vertical: 'top',
+                        wrapText: true,
+                    },
+                };
+            }
+        }
+
         const workbook = XLSX.utils.book_new();
-
-        XLSX.utils.book_append_sheet(workbook, worksheet, 'Vendorwise Results');
+        XLSX.utils.book_append_sheet(workbook, ws, 'Vendorwise Results');
         XLSX.writeFile(workbook, 'vendorwise-results.xlsx');
     };
 
@@ -193,64 +349,157 @@ const SearchVendor = ({ results = [] }) => {
             <Paper
                 className="no-print"
                 sx={{
-                    p: 2,
+                    p: { xs: 1.5, sm: 2 },
                     mb: 2,
-                    borderRadius: 2,
+                    borderRadius: 3,
                     boxShadow: 'none',
-                    border: '1px solid #e0e0e0',
+                    border: '1px solid #e0f2f1',
+                    backgroundColor: '#fbfffe',
                 }}
             >
                 <Box
-                    display="flex"
-                    gap={1}
-                    flexWrap="wrap"
-                    alignItems="center"
+                    sx={{
+                        display: 'flex',
+                        alignItems: { xs: 'stretch', md: 'center' },
+                        justifyContent: 'space-between',
+                        gap: 1.2,
+                        flexDirection: { xs: 'column', md: 'row' },
+                    }}
                 >
-                    <TextField
-                        size="small"
-                        placeholder="Search vendor, medicine, company, bill no, batch..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        sx={{ minWidth: 420 }}
-                    />
+                    <Box sx={{ minWidth: { xs: '100%', md: 240 } }}>
+                        <Typography
+                            sx={{
+                                fontWeight: 800,
+                                color: '#113b4a',
+                                fontSize: '0.92rem',
+                                mb: 0.3,
+                            }}
+                        >
+                            Search & Filter Vendors
+                        </Typography>
 
-                    <FormControl size="small" sx={{ minWidth: 220 }}>
-                        <Select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
-                            <MenuItem value="vendor_asc">Vendor A-Z</MenuItem>
-                            <MenuItem value="vendor_desc">Vendor Z-A</MenuItem>
-                            <MenuItem value="discount_high">Highest Discount</MenuItem>
-                            <MenuItem value="discount_low">Lowest Discount</MenuItem>
-                            <MenuItem value="medicine_asc">Medicine A-Z</MenuItem>
-                            <MenuItem value="company_asc">Company A-Z</MenuItem>
-                            <MenuItem value="date_new">Newest Date</MenuItem>
-                            <MenuItem value="date_old">Oldest Date</MenuItem>
-                        </Select>
-                    </FormControl>
+                        <Typography
+                            sx={{
+                                color: '#607d8b',
+                                fontSize: '0.76rem',
+                            }}
+                        >
+                            Search vendor, medicine, company, bill no, or batch no.
+                        </Typography>
+                    </Box>
 
-                    <Chip label={`Vendors: ${vendorCount}`} />
-                    <Chip label={`Rows: ${tableRows.length}`} />
-
-                    <Button
-                        variant="contained"
-                        size="small"
-                        onClick={exportToExcel}
+                    <Box
                         sx={{
-                            backgroundColor: '#2e7d32',
-                            textTransform: 'none',
-                            fontWeight: 700,
-                            px: 2,
-                            '&:hover': {
-                                backgroundColor: '#1b5e20',
+                            display: 'grid',
+                            gridTemplateColumns: {
+                                xs: '1fr',
+                                sm: '1fr 220px',
+                                md: 'minmax(320px, 1fr) 220px auto auto auto',
                             },
+                            alignItems: 'center',
+                            gap: 1,
+                            flexGrow: 1,
+                            width: '100%',
                         }}
                     >
-                        Export Excel
-                    </Button>
+                        <TextField
+                            size="small"
+                            placeholder="Search vendor, medicine, company, bill no, batch..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            sx={{
+                                width: '100%',
+                                '& .MuiOutlinedInput-root': {
+                                    backgroundColor: '#ffffff',
+                                    borderRadius: 2,
+                                },
+                            }}
+                        />
+
+                        <FormControl size="small" sx={{ width: '100%' }}>
+                            <Select
+                                value={sortBy}
+                                onChange={(e) => setSortBy(e.target.value)}
+                                sx={{
+                                    backgroundColor: '#ffffff',
+                                    borderRadius: 2,
+                                }}
+                            >
+                                <MenuItem value="vendor_asc">Vendor A-Z</MenuItem>
+                                <MenuItem value="vendor_desc">Vendor Z-A</MenuItem>
+                                <MenuItem value="discount_high">Highest Discount</MenuItem>
+                                <MenuItem value="discount_low">Lowest Discount</MenuItem>
+                                <MenuItem value="medicine_asc">Medicine A-Z</MenuItem>
+                                <MenuItem value="company_asc">Company A-Z</MenuItem>
+                                <MenuItem value="date_new">Newest Date</MenuItem>
+                                <MenuItem value="date_old">Oldest Date</MenuItem>
+                            </Select>
+                        </FormControl>
+
+                        <Chip
+                            label={`Vendors: ${vendorCount}`}
+                            sx={{
+                                fontWeight: 800,
+                                backgroundColor: '#f1f3f4',
+                                color: '#263238',
+                            }}
+                        />
+
+                        <Chip
+                            label={`Rows: ${tableRows.length}`}
+                            sx={{
+                                fontWeight: 800,
+                                backgroundColor: '#f1f3f4',
+                                color: '#263238',
+                            }}
+                        />
+
+                        <Button
+                            variant="contained"
+                            size="small"
+                            onClick={exportToExcel}
+                            sx={{
+                                backgroundColor: '#2e7d32',
+                                textTransform: 'none',
+                                fontWeight: 700,
+                                px: 2,
+                                whiteSpace: 'nowrap',
+                                '&:hover': {
+                                    backgroundColor: '#1b5e20',
+                                },
+                            }}
+                        >
+                            Export Excel
+                        </Button>
+                    </Box>
                 </Box>
             </Paper>
 
-            <TableContainer component={Paper} className="print-table-container">
-                <Table size="small" stickyHeader className="print-table">
+            <TableContainer
+                component={Paper}
+                className="print-table-container"
+                sx={{
+                    borderRadius: 2,
+                    boxShadow: 'none',
+                    border: '1px solid #eef3f4',
+                    overflowX: 'auto',
+                }}
+            >
+                <Table
+                    size="small"
+                    stickyHeader
+                    className="print-table"
+                    sx={{
+                        borderCollapse: 'collapse',
+                        '& th, & td': {
+                            border: '1px solid #eef3f4',
+                        },
+                        '& th': {
+                            backgroundColor: '#f8fbfc',
+                            fontWeight: 800,
+                        },
+                    }}
+                >
                     <TableHead>
                         <TableRow>
                             {[

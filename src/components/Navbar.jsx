@@ -4,7 +4,6 @@ import {
   AppBar,
   Toolbar,
   Typography,
-  Button,
   Box,
   IconButton,
   Drawer,
@@ -14,6 +13,8 @@ import {
   ListItemIcon,
   ListItemText,
   Divider,
+  Menu,
+  MenuItem,
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import LogoutIcon from '@mui/icons-material/Logout';
@@ -21,19 +22,37 @@ import HomeIcon from '@mui/icons-material/Home';
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutlined';
 import SearchIcon from '@mui/icons-material/Search';
+import SettingsIcon from '@mui/icons-material/Settings';
+import LockResetIcon from '@mui/icons-material/LockReset';
 import logo from '../assets/eops-logo.png';
 
 const Navbar = ({ onMenuSelect }) => {
   const navigate = useNavigate();
   const location = useLocation();
+
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [settingsAnchorEl, setSettingsAnchorEl] = useState(null);
 
   const isHomePage = location.pathname === '/home';
+  const settingsOpen = Boolean(settingsAnchorEl);
 
   const handleLogout = () => {
     sessionStorage.clear();
     localStorage.clear();
     window.location.replace('/');
+  };
+
+  const handleSettingsOpen = (event) => {
+    setSettingsAnchorEl(event.currentTarget);
+  };
+
+  const handleSettingsClose = () => {
+    setSettingsAnchorEl(null);
+  };
+
+  const handleResetPassword = () => {
+    handleSettingsClose();
+    navigate('/reset-password');
   };
 
   const toggleDrawer = (open) => (event) => {
@@ -126,19 +145,6 @@ const Navbar = ({ onMenuSelect }) => {
           </ListItemButton>
         </ListItem>
       </List>
-
-      <Divider />
-
-      <List>
-        <ListItem disablePadding>
-          <ListItemButton onClick={handleLogout}>
-            <ListItemIcon>
-              <LogoutIcon sx={{ color: '#e53935' }} />
-            </ListItemIcon>
-            <ListItemText primary="Logout" />
-          </ListItemButton>
-        </ListItem>
-      </List>
     </Box>
   );
 
@@ -187,58 +193,71 @@ const Navbar = ({ onMenuSelect }) => {
             EMEDIX GC
           </Typography>
 
-          {!isHomePage && (
-            <>
-              <Button
-                onClick={handleHomeClick}
-                startIcon={<HomeIcon sx={{ fontSize: 18 }} />}
-                sx={{
-                  color: '#0f9f9a',
-                  textTransform: 'none',
-                  fontWeight: 800,
-                  fontSize: '0.85rem',
-                  mr: 1,
-                  display: { xs: 'none', sm: 'inline-flex' },
-                  '&:hover': {
-                    backgroundColor: '#dffaf5',
-                  },
-                }}
-              >
-                Home
-              </Button>
-
-              <IconButton
-                onClick={handleHomeClick}
-                sx={{
-                  color: '#0f9f9a',
-                  mr: 1,
-                  display: { xs: 'inline-flex', sm: 'none' },
-                  '&:hover': {
-                    backgroundColor: '#dffaf5',
-                  },
-                }}
-              >
-                <HomeIcon />
-              </IconButton>
-            </>
-          )}
-
-          <Button
-            id="logout-button"
-            onClick={handleLogout}
-            startIcon={<LogoutIcon sx={{ fontSize: 18 }} />}
+          <Box
             sx={{
-              color: '#0f9f9a',
-              textTransform: 'none',
-              fontWeight: 800,
-              fontSize: '0.85rem',
-              '&:hover': {
-                backgroundColor: '#dffaf5',
-              },
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.4,
             }}
           >
-            Logout
-          </Button>
+            {!isHomePage && (
+              <IconButton
+                onClick={handleHomeClick}
+                size="small"
+                sx={{
+                  color: '#0f9f9a',
+                  p: 0.75,
+                  '&:hover': {
+                    backgroundColor: '#dffaf5',
+                  },
+                }}
+              >
+                <HomeIcon sx={{ fontSize: 22 }} />
+              </IconButton>
+            )}
+
+            <IconButton
+              onClick={handleSettingsOpen}
+              size="small"
+              sx={{
+                color: '#0f9f9a',
+                p: 0.75,
+                '&:hover': {
+                  backgroundColor: '#dffaf5',
+                },
+              }}
+            >
+              <SettingsIcon sx={{ fontSize: 22 }} />
+            </IconButton>
+          </Box>
+
+          <Menu
+            anchorEl={settingsAnchorEl}
+            open={settingsOpen}
+            onClose={handleSettingsClose}
+            anchorOrigin={{
+              vertical: 'bottom',
+              horizontal: 'right',
+            }}
+            transformOrigin={{
+              vertical: 'top',
+              horizontal: 'right',
+            }}
+          >
+            <MenuItem onClick={handleResetPassword}>
+              <ListItemIcon>
+                <LockResetIcon fontSize="small" sx={{ color: '#0f9f9a' }} />
+              </ListItemIcon>
+              <ListItemText primary="Reset Password" />
+            </MenuItem>
+
+            <MenuItem onClick={handleLogout}>
+              <ListItemIcon>
+                <LogoutIcon fontSize="small" sx={{ color: '#e53935' }} />
+              </ListItemIcon>
+              <ListItemText primary="Logout" />
+            </MenuItem>
+          </Menu>
         </Toolbar>
       </AppBar>
 

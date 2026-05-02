@@ -5,6 +5,7 @@ import Login from './pages/login';
 import Dashboard from './pages/dashboard';
 import Home from './pages/Home';
 import MedicineVendorSearch from './pages/MedicineVendorSearch';
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 import Navbar from './components/Navbar';
 
 const theme = createTheme({
@@ -103,6 +104,7 @@ function App() {
         />
         <Route path="/vendorsearch" element={<Navigate to="/dashboard" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
       </Routes>
     </ThemeProvider>
   );

@@ -114,6 +114,11 @@ body {
   margin: 8mm;
 }
 
+/* Screen: chips only; print: plain text (see @media print) */
+.vendors-print {
+  display: none;
+}
+
 @media print {
   html,
   body {
@@ -162,6 +167,19 @@ body {
     font-size: 9px !important;
   }
 
+  .vendors-screen {
+    display: none !important;
+  }
+
+  .vendors-print {
+    display: block !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+    overflow: visible !important;
+    font-size: 8px !important;
+    line-height: 1.35 !important;
+  }
+
   .print-table th,
   .print-table td {
     border: 1px solid #000 !important;
@@ -169,6 +187,7 @@ body {
     white-space: normal !important;
     word-break: break-word !important;
     overflow-wrap: anywhere !important;
+    overflow: visible !important;
     line-height: 1.2 !important;
     vertical-align: top !important;
   }
@@ -176,13 +195,6 @@ body {
   .print-table .MuiTableCell-root {
     font-size: 9px !important;
     padding: 3px 4px !important;
-  }
-
-  .print-table .MuiChip-root {
-    height: auto !important;
-    min-height: 18px !important;
-    font-size: 8px !important;
-    max-width: 100% !important;
   }
 
   .decision-badge {
