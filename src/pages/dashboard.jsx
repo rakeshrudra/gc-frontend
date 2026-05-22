@@ -8,6 +8,7 @@ import Upload from '../components/Upload';
 import ResultsTable from '../components/Table';
 import VendorSearch from './SearchVendor';
 import MedicineVendorSearch from './MedicineVendorSearch';
+import ProcessOrderCard from '../components/ProcessOrderCard';
 
 const getNumberValue = (value) => {
   if (value === null || value === undefined || value === '') return null;
@@ -70,6 +71,7 @@ const Dashboard = () => {
 
   const [showVendorwise, setShowVendorwise] = useState(false);
   const [vendorwiseResults, setVendorwiseResults] = useState([]);
+  const [showProcessCard, setShowProcessCard] = useState(false);
 
   useEffect(() => {
     const token = sessionStorage.getItem('token');
@@ -82,6 +84,7 @@ const Dashboard = () => {
 
     setShowVendorwise(false);
     setVendorwiseResults([]);
+    setShowProcessCard(false);
     setView('match');
   };
 
@@ -268,7 +271,7 @@ const Dashboard = () => {
 
                         {!showVendorwise && (
                           <Chip
-                          label={`Total Amount: ₹${formatAmount(totalUploadAmount)}`}
+                            label={`Total Amount: ₹${formatAmount(totalUploadAmount)}`}
                             sx={{
                               fontWeight: 800,
                               backgroundColor: '#e8f5e9',
@@ -316,13 +319,29 @@ const Dashboard = () => {
                     </Box>
                   </Paper>
 
+                  {showProcessCard && !showVendorwise && (
+                    <ProcessOrderCard
+                      docHeader={docHeader}
+                      totalRows={results.length}
+                      totalAmount={formatAmount(totalUploadAmount)}
+                      onClose={() => setShowProcessCard(false)}
+                      onSuccess={() => {
+                        setShowProcessCard(false);
+                      }}
+                    />
+                  )}
+
                   {showVendorwise ? (
                     <VendorSearch
                       results={vendorwiseResults}
                       documentHeader={docHeader}
                     />
                   ) : (
-                    <ResultsTable data={results} documentHeader={docHeader} />
+                    <ResultsTable
+                      data={results}
+                      documentHeader={docHeader}
+                      onProcessOrder={() => setShowProcessCard(true)}
+                    />
                   )}
                 </Box>
               )}

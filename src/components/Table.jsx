@@ -82,7 +82,7 @@ const EXCEL_TABLE_COL_COUNT = 11;
 
 const excelBlankRow = () => Array(EXCEL_TABLE_COL_COUNT).fill('');
 
-const ResultsTable = ({ data, documentHeader }) => {
+const ResultsTable = ({ data, documentHeader, onProcessOrder }) => {
   if (!data || data.length === 0) {
     return (
       <Paper sx={{ p: 6, textAlign: 'center' }}>
@@ -117,7 +117,6 @@ const ResultsTable = ({ data, documentHeader }) => {
     if (!v || (Array.isArray(v) && v.length === 0)) return '—';
 
     if (Array.isArray(v)) {
-      // Deduplicate: show only unique vendor names in the upload table
       const seen = new Set();
       const uniqueNames = [];
 
@@ -314,7 +313,30 @@ const ResultsTable = ({ data, documentHeader }) => {
 
   return (
     <Box>
-      <Box sx={{ mb: 1.5, display: 'flex', justifyContent: 'flex-end' }} className="no-print">
+      <Box
+        sx={{
+          mb: 1.5,
+          display: 'flex',
+          justifyContent: 'flex-end',
+          gap: 1,
+        }}
+        className="no-print"
+      >
+        {onProcessOrder && (
+          <Button
+            onClick={onProcessOrder}
+            variant="contained"
+            size="small"
+            sx={{
+              backgroundColor: '#1976d2',
+              textTransform: 'none',
+              fontWeight: 700,
+            }}
+          >
+            Process Order
+          </Button>
+        )}
+
         <Button
           onClick={exportToExcel}
           variant="contained"

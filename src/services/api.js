@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL;
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -11,54 +12,57 @@ api.interceptors.request.use(
   (config) => {
     const url = config.url || '';
     const isLogin = url.includes('/admins/login');
+
     if (isLogin) {
       delete config.headers.Authorization;
       return config;
     }
+
     const token = sessionStorage.getItem('token');
+
     if (token && token !== 'undefined' && token !== 'null') {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
     return config;
   },
   (error) => Promise.reject(error)
 );
 
-// Handle 401 responses globally (expired/invalid token)
+// Handle 401 responses globally
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     const status = error.response?.status;
     const url = error.config?.url || '';
     const isLogin = url.includes('/admins/login');
+
     if (status === 401 && !isLogin) {
       sessionStorage.clear();
       window.location.href = '/';
     }
+
     return Promise.reject(error);
   }
 );
 
-/**
- * Login with username & password.
- * @returns {{ access_token: string }}
- */
 export const loginUser = async (username, password) => {
-  const response = await api.post('/admins/login', { username, password });
+  const response = await api.post('/admins/login', {
+    username,
+    password,
+  });
+
   return response.data;
 };
 
-/**
- * Upload an Excel file for matching.
- * @param {File} file - The .xlsx file
- * @returns {Array} matched results
- */
 export const uploadFile = async (file) => {
   const formData = new FormData();
   formData.append('file', file);
+
   const response = await api.post('/match/upload', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
+
   return response.data;
 };
 
@@ -71,6 +75,7 @@ export const searchMasterMedicines = async (query) => {
   const response = await api.get('/match/search-master', {
     params: { query },
   });
+
   return response.data;
 };
 
