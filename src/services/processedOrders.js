@@ -10,8 +10,14 @@ export const createProcessedOrder = async (payload) => {
   return response.data;
 };
 
-export const getProcessedOrders = async () => {
-  const response = await api.get('/processed-orders');
+export const getProcessedOrders = async (sort = 'newest', store = '') => {
+  const response = await api.get('/processed-orders', {
+    params: {
+      sort,
+      store,
+    },
+  });
+
   return response.data;
 };
 
@@ -20,5 +26,26 @@ export const updateProcessedOrderStatus = async (id, status) => {
     status,
   });
 
+  return response.data;
+};
+
+export const createDispatchLabel = async (id, payload) => {
+  const response = await api.post(
+    `/processed-orders/${id}/dispatch-label`,
+    payload
+  );
+  return response.data;
+};
+
+export const getDispatchLabel = async (id) => {
+  const response = await api.get(`/processed-orders/${id}/dispatch-label`);
+  return response.data;
+};
+
+export const createTransportDetails = async (id, payload) => {
+  const response = await api.post(
+    `/processed-orders/${id}/transport-details`,
+    payload
+  );
   return response.data;
 };

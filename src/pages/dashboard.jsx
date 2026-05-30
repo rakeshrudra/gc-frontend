@@ -319,17 +319,18 @@ const Dashboard = () => {
                     </Box>
                   </Paper>
 
-                  {showProcessCard && !showVendorwise && (
-                    <ProcessOrderCard
-                      docHeader={docHeader}
-                      totalRows={results.length}
-                      totalAmount={formatAmount(totalUploadAmount)}
-                      onClose={() => setShowProcessCard(false)}
-                      onSuccess={() => {
-                        setShowProcessCard(false);
-                      }}
-                    />
-                  )}
+         {showProcessCard && !showVendorwise && (
+          <ProcessOrderCard
+            docHeader={docHeader}
+            totalRows={results.length}
+            totalAmount={formatAmount(totalUploadAmount)}
+            onClose={() => setShowProcessCard(false)}
+            onSuccess={() => {
+              setShowProcessCard(false);
+              navigate('/processed-orders');
+            }}
+          />
+        )}
 
                   {showVendorwise ? (
                     <VendorSearch

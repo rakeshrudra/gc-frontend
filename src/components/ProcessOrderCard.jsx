@@ -12,15 +12,15 @@ import {
 import { getStores, createProcessedOrder } from '../services/processedOrders';
 
 const extractOrderDetails = (docHeader) => {
-  const lines = docHeader?.lines || [];
-  const text = lines.join(' ');
+const lines = docHeader?.lines || [];
+const text = lines.join(' ');
 
-  const extractedStoreName = lines[0] || '';
+const extractedStoreName = lines[0] || '';
 
-  const gstinMatch = text.match(/GSTIN\s*:\s*([A-Z0-9]+)/i);
-  const orderMatch = text.match(/Order No\s*\|\s*([A-Z0-9-]+)/i);
-  const dateMatch = text.match(/Date:\s*\|\s*([0-9-]+)/i);
-  const dlMatch = text.match(/D\.L\. No\s*:\s*([A-Z0-9/-]+)/i);
+const gstinMatch = text.match(/GSTIN\s*:\s*([A-Z0-9]+)/i);
+const orderMatch = text.match(/Order No\s*\|\s*([A-Z0-9-]+)/i);
+const dateMatch = text.match(/Date:\s*\|\s*([0-9-]+)/i);
+const dlMatch = text.match(/D\.L\. No\s*:\s*([A-Z0-9/-]+)/i);
 
   return {
     extractedStoreName,
@@ -108,11 +108,16 @@ const ProcessOrderCard = ({
 
       await createProcessedOrder(payload);
 
-      alert('Order processed successfully');
       onSuccess?.();
     } catch (err) {
       const message =
         err.response?.data?.message || 'Failed to process order';
+
+      if (message === 'This order has already been processed for selected store') {
+        onSuccess?.();
+        return;
+      }
+
       setError(message);
     } finally {
       setLoading(false);
@@ -221,7 +226,7 @@ const ProcessOrderCard = ({
               </Button>
             }
           >
-            Are you sure you want to assign this purchase order to {' '}
+            Are you sure you want to assign this purchase order to{' '}
             <strong>{selectedStore.storeName}</strong>?
           </Alert>
         )}
@@ -243,7 +248,7 @@ const ProcessOrderCard = ({
             disabled={loading || !isStoreConfirmed}
             sx={{ backgroundColor: '#0f9f9a' }}
           >
-            {loading ? 'Submitting...' : 'Submit Process Order'}
+            {loading ? 'Opening Orders...' : 'Submit Process Order'}
           </Button>
         </Box>
       </Stack>

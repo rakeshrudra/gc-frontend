@@ -16,6 +16,7 @@ import {
   Menu,
   MenuItem,
 } from '@mui/material';
+
 import MenuIcon from '@mui/icons-material/Menu';
 import LogoutIcon from '@mui/icons-material/Logout';
 import HomeIcon from '@mui/icons-material/Home';
@@ -24,6 +25,8 @@ import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutlined';
 import SearchIcon from '@mui/icons-material/Search';
 import SettingsIcon from '@mui/icons-material/Settings';
 import LockResetIcon from '@mui/icons-material/LockReset';
+import TableChartIcon from '@mui/icons-material/TableChart';
+
 import logo from '../assets/eops-logo.png';
 
 const Navbar = ({ onMenuSelect }) => {
@@ -56,15 +59,25 @@ const Navbar = ({ onMenuSelect }) => {
   };
 
   const toggleDrawer = (open) => (event) => {
-    if (event.type === 'keydown' && (event.key === 'Tab' || event.key === 'Shift')) {
+    if (
+      event.type === 'keydown' &&
+      (event.key === 'Tab' || event.key === 'Shift')
+    ) {
       return;
     }
+
     setDrawerOpen(open);
   };
 
   const handleMenuClick = (route, view) => {
-    if (onMenuSelect && view) onMenuSelect(view);
-    if (route) navigate(route);
+    if (onMenuSelect && view) {
+      onMenuSelect(view);
+    }
+
+    if (route) {
+      navigate(route);
+    }
+
     setDrawerOpen(false);
   };
 
@@ -92,7 +105,14 @@ const Navbar = ({ onMenuSelect }) => {
           alt="EOPS Logo"
           style={{ width: 90, marginRight: 10 }}
         />
-        <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f9f9a' }}>
+
+        <Typography
+          variant="h6"
+          sx={{
+            fontWeight: 800,
+            color: '#0f9f9a',
+          }}
+        >
           Menu
         </Typography>
       </Box>
@@ -100,14 +120,21 @@ const Navbar = ({ onMenuSelect }) => {
       <Divider />
 
       <List>
+        {/* HOME */}
         <ListItem disablePadding>
           <ListItemButton onClick={() => handleMenuClick('/home')}>
             <ListItemIcon>
               <HomeOutlinedIcon sx={{ color: '#0f9f9a' }} />
             </ListItemIcon>
+
             <ListItemText
               primary={
-                <Typography sx={{ fontWeight: 600, fontSize: '0.9rem' }}>
+                <Typography
+                  sx={{
+                    fontWeight: 600,
+                    fontSize: '0.9rem',
+                  }}
+                >
                   Home
                 </Typography>
               }
@@ -115,14 +142,23 @@ const Navbar = ({ onMenuSelect }) => {
           </ListItemButton>
         </ListItem>
 
+        {/* YES MAYBE REPORT */}
         <ListItem disablePadding>
-          <ListItemButton onClick={() => handleMenuClick('/dashboard', 'match')}>
+          <ListItemButton
+            onClick={() => handleMenuClick('/dashboard', 'match')}
+          >
             <ListItemIcon>
               <CheckCircleOutlineIcon sx={{ color: '#16a085' }} />
             </ListItemIcon>
+
             <ListItemText
               primary={
-                <Typography sx={{ fontWeight: 600, fontSize: '0.9rem' }}>
+                <Typography
+                  sx={{
+                    fontWeight: 600,
+                    fontSize: '0.9rem',
+                  }}
+                >
                   YES/MAYBE Report
                 </Typography>
               }
@@ -130,14 +166,52 @@ const Navbar = ({ onMenuSelect }) => {
           </ListItemButton>
         </ListItem>
 
+        {/* PROCESSED ORDERS */}
         <ListItem disablePadding>
-          <ListItemButton onClick={() => handleMenuClick('/medicine-vendor-search', 'searchMaster')}>
+          <ListItemButton
+            onClick={() => handleMenuClick('/processed-orders')}
+          >
+            <ListItemIcon>
+              <TableChartIcon sx={{ color: '#8e24aa' }} />
+            </ListItemIcon>
+
+            <ListItemText
+              primary={
+                <Typography
+                  sx={{
+                    fontWeight: 600,
+                    fontSize: '0.9rem',
+                  }}
+                >
+                  Processed Orders
+                </Typography>
+              }
+            />
+          </ListItemButton>
+        </ListItem>
+
+        {/* SEARCH */}
+        <ListItem disablePadding>
+          <ListItemButton
+            onClick={() =>
+              handleMenuClick(
+                '/medicine-vendor-search',
+                'searchMaster'
+              )
+            }
+          >
             <ListItemIcon>
               <SearchIcon sx={{ color: '#0f9f9a' }} />
             </ListItemIcon>
+
             <ListItemText
               primary={
-                <Typography sx={{ fontWeight: 600, fontSize: '0.9rem' }}>
+                <Typography
+                  sx={{
+                    fontWeight: 600,
+                    fontSize: '0.9rem',
+                  }}
+                >
                   Search Medicines and Vendors
                 </Typography>
               }
@@ -163,7 +237,10 @@ const Navbar = ({ onMenuSelect }) => {
             edge="start"
             aria-label="menu"
             onClick={toggleDrawer(true)}
-            sx={{ mr: 2, color: '#0f9f9a' }}
+            sx={{
+              mr: 2,
+              color: '#0f9f9a',
+            }}
           >
             <MenuIcon />
           </IconButton>
@@ -246,22 +323,34 @@ const Navbar = ({ onMenuSelect }) => {
           >
             <MenuItem onClick={handleResetPassword}>
               <ListItemIcon>
-                <LockResetIcon fontSize="small" sx={{ color: '#0f9f9a' }} />
+                <LockResetIcon
+                  fontSize="small"
+                  sx={{ color: '#0f9f9a' }}
+                />
               </ListItemIcon>
+
               <ListItemText primary="Reset Password" />
             </MenuItem>
 
             <MenuItem onClick={handleLogout}>
               <ListItemIcon>
-                <LogoutIcon fontSize="small" sx={{ color: '#e53935' }} />
+                <LogoutIcon
+                  fontSize="small"
+                  sx={{ color: '#e53935' }}
+                />
               </ListItemIcon>
+
               <ListItemText primary="Logout" />
             </MenuItem>
           </Menu>
         </Toolbar>
       </AppBar>
 
-      <Drawer anchor="left" open={drawerOpen} onClose={toggleDrawer(false)}>
+      <Drawer
+        anchor="left"
+        open={drawerOpen}
+        onClose={toggleDrawer(false)}
+      >
         {drawerContent}
       </Drawer>
     </>
