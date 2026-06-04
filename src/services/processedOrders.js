@@ -21,11 +21,17 @@ export const getProcessedOrders = async (sort = 'newest', store = '') => {
   return response.data;
 };
 
-export const updateProcessedOrderStatus = async (id, status) => {
+export const updateProcessedOrderStatus = async (id, status, remarks) => {
   const response = await api.patch(`/processed-orders/${id}/status`, {
     status,
+    remarks,
   });
 
+  return response.data;
+};
+
+export const getStatusLogs = async (id) => {
+  const response = await api.get(`/processed-orders/${id}/status-logs`);
   return response.data;
 };
 

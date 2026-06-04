@@ -12,15 +12,15 @@ import {
 import { getStores, createProcessedOrder } from '../services/processedOrders';
 
 const extractOrderDetails = (docHeader) => {
-const lines = docHeader?.lines || [];
-const text = lines.join(' ');
+  const lines = docHeader?.lines || [];
+  const text = lines.join(' ');
 
-const extractedStoreName = lines[0] || '';
+  const extractedStoreName = lines[0] || '';
 
-const gstinMatch = text.match(/GSTIN\s*:\s*([A-Z0-9]+)/i);
-const orderMatch = text.match(/Order No\s*\|\s*([A-Z0-9-]+)/i);
-const dateMatch = text.match(/Date:\s*\|\s*([0-9-]+)/i);
-const dlMatch = text.match(/D\.L\. No\s*:\s*([A-Z0-9/-]+)/i);
+  const gstinMatch = text.match(/GSTIN\s*:\s*([A-Z0-9]+)/i);
+  const orderMatch = text.match(/Order No\s*\|\s*([A-Z0-9-]+)/i);
+  const dateMatch = text.match(/Date:\s*\|\s*([0-9-]+)/i);
+  const dlMatch = text.match(/D\.L\. No\s*:\s*([A-Z0-9/-]+)/i);
 
   return {
     extractedStoreName,
@@ -149,68 +149,85 @@ const ProcessOrderCard = ({
       )}
 
       <Stack spacing={2}>
-        <TextField
-          label="Extracted Store Name"
-          value={orderDetails.extractedStoreName}
-          fullWidth
-          InputProps={{ readOnly: true }}
-        />
-
-        <TextField
-          label="Order Number"
-          value={orderDetails.orderNumber}
-          fullWidth
-          InputProps={{ readOnly: true }}
-        />
-
-        <TextField
-          label="Order Date"
-          value={orderDetails.orderDate}
-          fullWidth
-          InputProps={{ readOnly: true }}
-        />
-
-        <TextField
-          label="GSTIN"
-          value={orderDetails.gstin}
-          fullWidth
-          InputProps={{ readOnly: true }}
-        />
-
-        <TextField
-          label="DL Number"
-          value={orderDetails.dlNumber}
-          fullWidth
-          InputProps={{ readOnly: true }}
-        />
-
-        <TextField
-          label="Total Items"
-          value={totalRows}
-          fullWidth
-          InputProps={{ readOnly: true }}
-        />
-
-        <TextField
-          label="Total Amount"
-          value={`₹${totalAmount}`}
-          fullWidth
-          InputProps={{ readOnly: true }}
-        />
-
-        <TextField
-          select
-          label="Select Store"
-          value={selectedStoreId}
-          onChange={handleStoreChange}
-          fullWidth
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: {
+              xs: '1fr',
+              md: 'repeat(3, 1fr)',
+            },
+            gap: 2,
+          }}
         >
-          {stores.map((store) => (
-            <MenuItem key={store.id} value={store.id}>
-              {store.storeName}
-            </MenuItem>
-          ))}
-        </TextField>
+          <TextField
+            label="Extracted Store Name"
+            value={orderDetails.extractedStoreName}
+            fullWidth
+            InputProps={{ readOnly: true }}
+          />
+
+          <TextField
+            label="Order Number"
+            value={orderDetails.orderNumber}
+            fullWidth
+            InputProps={{ readOnly: true }}
+          />
+
+          <TextField
+            label="Order Date"
+            value={orderDetails.orderDate}
+            fullWidth
+            InputProps={{ readOnly: true }}
+          />
+
+          <TextField
+            label="GSTIN"
+            value={orderDetails.gstin}
+            fullWidth
+            InputProps={{ readOnly: true }}
+          />
+
+          <TextField
+            label="DL Number"
+            value={orderDetails.dlNumber}
+            fullWidth
+            InputProps={{ readOnly: true }}
+          />
+
+          <TextField
+            label="Total Items"
+            value={totalRows}
+            fullWidth
+            InputProps={{ readOnly: true }}
+          />
+
+          <TextField
+            label="Total Amount"
+            value={`₹${totalAmount}`}
+            fullWidth
+            InputProps={{ readOnly: true }}
+          />
+
+          <TextField
+            select
+            label="Select Store"
+            value={selectedStoreId}
+            onChange={handleStoreChange}
+            fullWidth
+            sx={{
+              gridColumn: {
+                xs: 'auto',
+                md: 'span 2',
+              },
+            }}
+          >
+            {stores.map((store) => (
+              <MenuItem key={store.id} value={store.id}>
+                {store.storeName}
+              </MenuItem>
+            ))}
+          </TextField>
+        </Box>
 
         {selectedStore && !isStoreConfirmed && (
           <Alert
@@ -256,4 +273,4 @@ const ProcessOrderCard = ({
   );
 };
 
-export default ProcessOrderCard;
+export default ProcessOrderCard;  
