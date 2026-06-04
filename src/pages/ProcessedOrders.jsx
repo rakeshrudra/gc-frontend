@@ -36,7 +36,9 @@ import {
   createDispatchLabel,
   getDispatchLabel,
   createTransportDetails,
+  getTransportDetails,
   getStatusLogs,
+  getAdmins,
 } from "../services/processedOrders";
 
 const statuses = [
@@ -48,6 +50,23 @@ const statuses = [
   "PARTIALLY_COMPLETED",
   "UNABLE_TO_FULFILL",
 ];
+
+const isValidTransition = (currentStatus, newStatus) => {
+  const allowedTransitions = {
+    RECEIVED: ["TO_GM_ROAD"],
+    TO_GM_ROAD: ["READY_TO_DISPATCH"],
+    READY_TO_DISPATCH: ["DISPATCHED"],
+    DISPATCHED: ["DELIVERED", "PARTIALLY_COMPLETED", "UNABLE_TO_FULFILL"],
+    DELIVERED: ["PARTIALLY_COMPLETED", "UNABLE_TO_FULFILL"],
+    PARTIALLY_COMPLETED: ["DELIVERED", "UNABLE_TO_FULFILL"],
+    UNABLE_TO_FULFILL: ["DELIVERED", "PARTIALLY_COMPLETED"],
+  };
+
+  return (
+    currentStatus === newStatus ||
+    allowedTransitions[currentStatus]?.includes(newStatus)
+  );
+};
 
 const getStatusColor = (status) => {
   switch (status) {
@@ -89,6 +108,7 @@ const ProcessedOrders = () => {
   const [error, setError] = useState("");
   const [sort, setSort] = useState("newest");
   const [storeSearch, setStoreSearch] = useState("");
+  const [admins, setAdmins] = useState([]);
 
   const [openDispatchModal, setOpenDispatchModal] = useState(false);
   const [openTransportModal, setOpenTransportModal] = useState(false);
@@ -128,6 +148,19 @@ const ProcessedOrders = () => {
     loadOrders();
   }, [sort, storeSearch]);
 
+  useEffect(() => {
+    const loadAdmins = async () => {
+      try {
+        const data = await getAdmins();
+        setAdmins(data || []);
+      } catch (err) {
+        setAdmins([]);
+      }
+    };
+
+    loadAdmins();
+  }, []);
+
   const toggleSort = () => {
     setSort((prev) => (prev === "newest" ? "oldest" : "newest"));
   };
@@ -147,19 +180,36 @@ const ProcessedOrders = () => {
     setOpenDispatchModal(true);
   };
 
-  const openTransportPopup = (order) => {
+  const openTransportPopup = async (order) => {
     setSelectedOrder(order);
 
-    setTransportForm({
-      busNo: "",
-      mobileNumber: "",
-      pickupLocation: "",
-    });
+    try {
+      const details = await getTransportDetails(order.id);
+
+      setTransportForm({
+        busNo: details?.busNo || "",
+        mobileNumber: details?.mobileNumber || "",
+        pickupLocation: details?.pickupLocation || "",
+      });
+    } catch (err) {
+      setTransportForm({
+        busNo: "",
+        mobileNumber: "",
+        pickupLocation: "",
+      });
+    }
 
     setOpenTransportModal(true);
   };
 
   const handleStatusChange = async (order, status) => {
+    if (!isValidTransition(order.status, status)) {
+      setError(
+        `Cannot change status from ${order.status} directly to ${status}`,
+      );
+      return;
+    }
+
     setError("");
     setSelectedOrder(order);
     setPendingStatus(status);
@@ -198,15 +248,15 @@ const ProcessedOrders = () => {
       const response = await updateProcessedOrderStatus(
         selectedOrder.id,
         pendingStatus,
-        remarks.trim()
+        remarks.trim(),
       );
 
       setOrders((prev) =>
         prev.map((item) =>
           item.id === selectedOrder.id
             ? { ...item, status: pendingStatus }
-            : item
-        )
+            : item,
+        ),
       );
 
       setStatusLogs(response.logs || []);
@@ -308,7 +358,7 @@ const ProcessedOrders = () => {
       await updateProcessedOrderStatus(
         selectedOrder.id,
         "READY_TO_DISPATCH",
-        remarks.trim()
+        remarks.trim(),
       );
 
       await createDispatchLabel(selectedOrder.id, payload);
@@ -317,8 +367,8 @@ const ProcessedOrders = () => {
         prev.map((item) =>
           item.id === selectedOrder.id
             ? { ...item, status: "READY_TO_DISPATCH" }
-            : item
-        )
+            : item,
+        ),
       );
 
       setOpenDispatchModal(false);
@@ -355,7 +405,7 @@ const ProcessedOrders = () => {
       await updateProcessedOrderStatus(
         selectedOrder.id,
         "DISPATCHED",
-        remarks.trim()
+        remarks.trim(),
       );
 
       await createTransportDetails(selectedOrder.id, payload);
@@ -364,8 +414,8 @@ const ProcessedOrders = () => {
         prev.map((item) =>
           item.id === selectedOrder.id
             ? { ...item, status: "DISPATCHED" }
-            : item
-        )
+            : item,
+        ),
       );
 
       setOpenTransportModal(false);
@@ -613,6 +663,7 @@ const ProcessedOrders = () => {
                 value={dispatchForm.toStore}
                 onChange={handleDispatchInputChange}
                 fullWidth
+                disabled
               />
 
               <TextField
@@ -624,12 +675,19 @@ const ProcessedOrders = () => {
               />
 
               <TextField
+                select
                 label="Assign To"
                 name="assignedTo"
                 value={dispatchForm.assignedTo}
                 onChange={handleDispatchInputChange}
                 fullWidth
-              />
+              >
+                {admins.map((admin) => (
+                  <MenuItem key={admin.id} value={admin.name}>
+                    {admin.name}
+                  </MenuItem>
+                ))}
+              </TextField>
 
               <TextField
                 label="Dispatch Date"
@@ -637,6 +695,7 @@ const ProcessedOrders = () => {
                 value={dispatchForm.dispatchDate}
                 onChange={handleDispatchInputChange}
                 fullWidth
+                disabled
               />
               <TextField
                 label="Remarks"

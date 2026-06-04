@@ -48,10 +48,22 @@ export const getDispatchLabel = async (id) => {
   return response.data;
 };
 
+export const getTransportDetails = async (id) => {
+  const response = await api.get(
+    `/processed-orders/${id}/transport-details`
+  );
+  return response.data;
+};
+
 export const createTransportDetails = async (id, payload) => {
   const response = await api.post(
     `/processed-orders/${id}/transport-details`,
     payload
   );
+  return response.data;
+};
+
+export const getAdmins = async () => {
+  const response = await api.get('/admins');
   return response.data;
 };
