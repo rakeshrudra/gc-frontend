@@ -250,6 +250,8 @@ const ProcessedOrders = () => {
         pendingStatus,
         remarks.trim(),
       );
+      console.log("Pending Status:", pendingStatus);
+console.log("API Response:", response);
 
       setOrders((prev) =>
         prev.map((item) =>
@@ -261,14 +263,6 @@ const ProcessedOrders = () => {
 
       setStatusLogs(response.logs || []);
       setOpenRemarksModal(false);
-
-      if (pendingStatus === "READY_TO_DISPATCH") {
-        openDispatchPopup(selectedOrder);
-      }
-
-      if (pendingStatus === "DISPATCHED") {
-        openTransportPopup(selectedOrder);
-      }
     } catch (err) {
       const message = err.response?.data?.message || "Failed to update status";
 
@@ -366,7 +360,11 @@ const ProcessedOrders = () => {
       setOrders((prev) =>
         prev.map((item) =>
           item.id === selectedOrder.id
-            ? { ...item, status: "READY_TO_DISPATCH" }
+            ? {
+                ...item,
+                status: "READY_TO_DISPATCH",
+                assignedTo: dispatchForm.assignedTo.trim(),
+              }
             : item,
         ),
       );
@@ -426,6 +424,8 @@ const ProcessedOrders = () => {
       setError(message);
     }
   };
+
+  const showAssignedToColumn = orders.some((order) => order.assignedTo);
 
   return (
     <>
@@ -503,8 +503,9 @@ const ProcessedOrders = () => {
                 <TableCell>Selected Store</TableCell>
                 <TableCell>Order Number</TableCell>
                 <TableCell>Order Date</TableCell>
+                {showAssignedToColumn && <TableCell>Assigned To</TableCell>}
                 <TableCell>Status</TableCell>
-                <TableCell align="center"></TableCell>
+                <TableCell align="center" sx={{ width: 180 }}></TableCell>
               </TableRow>
             </TableHead>
 
@@ -516,6 +517,9 @@ const ProcessedOrders = () => {
                   <TableCell>{order.selectedStoreName || "—"}</TableCell>
                   <TableCell>{order.orderNumber}</TableCell>
                   <TableCell>{order.orderDate}</TableCell>
+                  {showAssignedToColumn && (
+                    <TableCell>{order.assignedTo || "-"}</TableCell>
+                  )}
 
                   <TableCell>
                     <Select
@@ -554,7 +558,6 @@ const ProcessedOrders = () => {
                         justifyContent: "flex-start",
                         alignItems: "center",
                         gap: 1.5,
-                        ml: -8,
                       }}
                     >
                       <Tooltip title="Print Dispatch Label">
@@ -564,7 +567,6 @@ const ProcessedOrders = () => {
                             color: "#0f9f9a",
                             border: "1px solid #0f9f9a",
                             mr: 1,
-                            ml: -4,
                             "&:hover": {
                               backgroundColor: "#e6f7f6",
                             },
@@ -611,7 +613,10 @@ const ProcessedOrders = () => {
 
               {orders.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={7} align="center">
+                  <TableCell
+                    colSpan={showAssignedToColumn ? 8 : 7}
+                    align="center"
+                  >
                     No processed orders found
                   </TableCell>
                 </TableRow>
