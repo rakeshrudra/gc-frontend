@@ -10,11 +10,18 @@ export const createProcessedOrder = async (payload) => {
   return response.data;
 };
 
-export const getProcessedOrders = async (sort = 'newest', store = '') => {
+export const getProcessedOrders = async (
+  sort = 'newest',
+  store = '',
+  page = 1,
+  limit = 50
+) => {
   const response = await api.get('/processed-orders', {
     params: {
       sort,
       store,
+      page,
+      limit,
     },
   });
 
