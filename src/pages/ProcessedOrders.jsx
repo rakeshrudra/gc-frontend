@@ -109,6 +109,9 @@ const ProcessedOrders = () => {
   const [sort, setSort] = useState("newest");
   const [storeSearch, setStoreSearch] = useState("");
   const [admins, setAdmins] = useState([]);
+  const [page, setPage] = useState(1);
+  const [totalOrders, setTotalOrders] = useState(0);
+  const rowsPerPage = 50;
 
   const [openDispatchModal, setOpenDispatchModal] = useState(false);
   const [openTransportModal, setOpenTransportModal] = useState(false);
@@ -137,8 +140,15 @@ const ProcessedOrders = () => {
   const loadOrders = async () => {
     try {
       setError("");
-      const data = await getProcessedOrders(sort, storeSearch);
-      setOrders(data || []);
+      const result = await getProcessedOrders(
+        sort,
+        storeSearch,
+        page,
+        rowsPerPage,
+      );
+
+      setOrders(result.data || []);
+      setTotalOrders(result.total || 0);
     } catch (err) {
       setError("Failed to load processed orders");
     }
@@ -146,7 +156,7 @@ const ProcessedOrders = () => {
 
   useEffect(() => {
     loadOrders();
-  }, [sort, storeSearch]);
+  }, [sort, storeSearch, page]);
 
   useEffect(() => {
     const loadAdmins = async () => {
@@ -162,6 +172,7 @@ const ProcessedOrders = () => {
   }, []);
 
   const toggleSort = () => {
+    setPage(1);
     setSort((prev) => (prev === "newest" ? "oldest" : "newest"));
   };
 
@@ -251,7 +262,7 @@ const ProcessedOrders = () => {
         remarks.trim(),
       );
       console.log("Pending Status:", pendingStatus);
-console.log("API Response:", response);
+      console.log("API Response:", response);
 
       setOrders((prev) =>
         prev.map((item) =>
@@ -489,7 +500,10 @@ console.log("API Response:", response);
             label="Search Store"
             placeholder="Enter store name"
             value={storeSearch}
-            onChange={(e) => setStoreSearch(e.target.value)}
+            onChange={(e) => {
+              setPage(1);
+              setStoreSearch(e.target.value);
+            }}
             sx={{ minWidth: 280, backgroundColor: "#fff" }}
           />
         </Stack>
@@ -624,6 +638,37 @@ console.log("API Response:", response);
             </TableBody>
           </Table>
         </TableContainer>
+
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            gap: 2,
+            mt: 2,
+          }}
+        >
+          <Button
+            variant="outlined"
+            disabled={page === 1}
+            onClick={() => setPage(page - 1)}
+          >
+            Previous
+          </Button>
+
+          <Typography>
+            Showing {totalOrders === 0 ? 0 : (page - 1) * rowsPerPage + 1}-
+            {Math.min(page * rowsPerPage, totalOrders)} of {totalOrders}
+          </Typography>
+
+          <Button
+            variant="outlined"
+            disabled={page * rowsPerPage >= totalOrders}
+            onClick={() => setPage(page + 1)}
+          >
+            Next
+          </Button>
+        </Box>
 
         <Dialog
           open={openDispatchModal}
