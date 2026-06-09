@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import ChatIcon from "@mui/icons-material/Chat";
+import InfoIcon from "@mui/icons-material/Info";
 
 import {
   Box,
@@ -39,6 +40,7 @@ import {
   getTransportDetails,
   getStatusLogs,
   getAdmins,
+  getProcessedOrderItems,
 } from "../services/processedOrders";
 
 const statuses = [
@@ -52,14 +54,20 @@ const statuses = [
 ];
 
 const isValidTransition = (currentStatus, newStatus) => {
+  if (currentStatus === "UNABLE_TO_FULFILL") {
+    return currentStatus === newStatus;
+  }
+
   const allowedTransitions = {
-    RECEIVED: ["TO_GM_ROAD"],
-    TO_GM_ROAD: ["READY_TO_DISPATCH"],
-    READY_TO_DISPATCH: ["DISPATCHED"],
+    RECEIVED: ["TO_GM_ROAD", "UNABLE_TO_FULFILL"],
+    TO_GM_ROAD: ["READY_TO_DISPATCH", "UNABLE_TO_FULFILL"],
+    READY_TO_DISPATCH: ["DISPATCHED", "UNABLE_TO_FULFILL"],
+
     DISPATCHED: ["DELIVERED", "PARTIALLY_COMPLETED", "UNABLE_TO_FULFILL"],
+
     DELIVERED: ["PARTIALLY_COMPLETED", "UNABLE_TO_FULFILL"],
+
     PARTIALLY_COMPLETED: ["DELIVERED", "UNABLE_TO_FULFILL"],
-    UNABLE_TO_FULFILL: ["DELIVERED", "PARTIALLY_COMPLETED"],
   };
 
   return (
@@ -111,6 +119,11 @@ const ProcessedOrders = () => {
   const [admins, setAdmins] = useState([]);
   const [page, setPage] = useState(1);
   const [totalOrders, setTotalOrders] = useState(0);
+  const [openItemsModal, setOpenItemsModal] = useState(false);
+  const [orderItems, setOrderItems] = useState([]);
+  const [errorPopupOpen, setErrorPopupOpen] = useState(false);
+  const [errorPopupMessage, setErrorPopupMessage] = useState("");
+
   const rowsPerPage = 50;
 
   const [openDispatchModal, setOpenDispatchModal] = useState(false);
@@ -119,6 +132,7 @@ const ProcessedOrders = () => {
   const [pendingStatus, setPendingStatus] = useState("");
   const [remarks, setRemarks] = useState("");
   const [statusLogs, setStatusLogs] = useState([]);
+  const [isTransportReadonly, setIsTransportReadonly] = useState(false);
 
   const [selectedOrder, setSelectedOrder] = useState(null);
 
@@ -126,6 +140,7 @@ const ProcessedOrders = () => {
     numberOfBoxes: "",
     bigName: "",
     toStore: "",
+    mobileNumber: "",
     dispatchDate: todayDate(),
     invoiceNumber: "",
     assignedTo: "",
@@ -183,6 +198,7 @@ const ProcessedOrders = () => {
       numberOfBoxes: "",
       bigName: "",
       toStore: order.selectedStoreName || "",
+      mobileNumber: "",
       dispatchDate: todayDate(),
       invoiceNumber: "",
       assignedTo: "",
@@ -215,9 +231,11 @@ const ProcessedOrders = () => {
 
   const handleStatusChange = async (order, status) => {
     if (!isValidTransition(order.status, status)) {
-      setError(
-        `Cannot change status from ${order.status} directly to ${status}`,
-      );
+      const message = `Cannot change status from ${order.status} directly to ${status}`;
+
+      setError(message);
+      setErrorPopupMessage(message);
+      setErrorPopupOpen(true);
       return;
     }
 
@@ -278,6 +296,8 @@ const ProcessedOrders = () => {
       const message = err.response?.data?.message || "Failed to update status";
 
       setError(message);
+      setErrorPopupMessage(message);
+      setErrorPopupOpen(true);
     }
   };
 
@@ -290,6 +310,19 @@ const ProcessedOrders = () => {
       window.open(`/dispatch-labels/${order.id}`, "_blank");
     } catch (err) {
       openDispatchPopup(order);
+    }
+  };
+
+  const handleViewItems = async (order) => {
+    try {
+      setError("");
+      setSelectedOrder(order);
+
+      const data = await getProcessedOrderItems(order.id);
+      setOrderItems(data || []);
+      setOpenItemsModal(true);
+    } catch (err) {
+      setError("Failed to load order items");
     }
   };
 
@@ -338,6 +371,7 @@ const ProcessedOrders = () => {
         !dispatchForm.numberOfBoxes ||
         !dispatchForm.bigName.trim() ||
         !dispatchForm.toStore.trim() ||
+        !dispatchForm.mobileNumber.trim() ||
         !dispatchForm.dispatchDate.trim() ||
         !dispatchForm.invoiceNumber.trim() ||
         !dispatchForm.assignedTo.trim()
@@ -350,6 +384,7 @@ const ProcessedOrders = () => {
         numberOfBoxes: Number(dispatchForm.numberOfBoxes),
         bigName: dispatchForm.bigName.trim(),
         toStore: dispatchForm.toStore.trim(),
+        mobileNumber: dispatchForm.mobileNumber.trim(),
         dispatchDate: dispatchForm.dispatchDate.trim(),
         invoiceNumber: dispatchForm.invoiceNumber.trim(),
         assignedTo: dispatchForm.assignedTo.trim(),
@@ -461,7 +496,7 @@ const ProcessedOrders = () => {
         )}
 
         <Stack
-          direction={{ xs: "column", sm: "row" }}
+          direction={{ xs: "column", md: "row" }}
           spacing={2}
           sx={{ mb: 2 }}
         >
@@ -508,8 +543,8 @@ const ProcessedOrders = () => {
           />
         </Stack>
 
-        <TableContainer component={Paper}>
-          <Table>
+        <TableContainer component={Paper} sx={{ overflowX: "auto" }}>
+          <Table sx={{ minWidth: 1400 }}>
             <TableHead>
               <TableRow>
                 <TableCell>ID</TableCell>
@@ -519,18 +554,47 @@ const ProcessedOrders = () => {
                 <TableCell>Order Date</TableCell>
                 {showAssignedToColumn && <TableCell>Assigned To</TableCell>}
                 <TableCell>Status</TableCell>
-                <TableCell align="center" sx={{ width: 180 }}></TableCell>
+                <TableCell
+                  align="center"
+                  sx={{
+                    width: 220,
+                    minWidth: 220,
+                  }}
+                >
+                  Actions
+                </TableCell>
               </TableRow>
             </TableHead>
 
             <TableBody>
               {orders.map((order) => (
                 <TableRow key={order.id}>
-                  <TableCell>{order.id}</TableCell>
+                  <TableCell
+                    onClick={() => handleViewItems(order)}
+                    sx={{
+                      color: "#1976d2",
+                      cursor: "pointer",
+                      fontWeight: 700,
+                      textDecoration: "underline",
+                    }}
+                  >
+                    {order.id}
+                  </TableCell>
                   <TableCell>{order.extractedStoreName}</TableCell>
                   <TableCell>{order.selectedStoreName || "—"}</TableCell>
                   <TableCell>{order.orderNumber}</TableCell>
-                  <TableCell>{order.orderDate}</TableCell>
+                  <TableCell>
+                    {order.uploadDateTime
+                      ? new Date(order.uploadDateTime).toLocaleString("en-IN", {
+                          day: "2-digit",
+                          month: "2-digit",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          hour12: true,
+                        })
+                      : order.orderDate}
+                  </TableCell>
                   {showAssignedToColumn && (
                     <TableCell>{order.assignedTo || "-"}</TableCell>
                   )}
@@ -561,9 +625,10 @@ const ProcessedOrders = () => {
                   </TableCell>
                   <TableCell
                     sx={{
-                      width: "70px",
-                      pl: 0,
-                      pr: 0,
+                      width: 220,
+                      minWidth: 220,
+                      pl: 1,
+                      pr: 1,
                     }}
                   >
                     <Box
@@ -571,9 +636,27 @@ const ProcessedOrders = () => {
                         display: "flex",
                         justifyContent: "flex-start",
                         alignItems: "center",
-                        gap: 1.5,
+                        gap: 1,
+                        flexWrap: "nowrap",
+                        minWidth: 260,
                       }}
                     >
+                      <Tooltip title="View Order Items">
+                        <IconButton
+                          onClick={() => handleViewItems(order)}
+                          sx={{
+                            color: "#317090",
+                            border: "1px solid #317090",
+                            mr: 1,
+                            "&:hover": {
+                              backgroundColor: "#e6f7f6",
+                            },
+                          }}
+                        >
+                          <InfoIcon />
+                        </IconButton>
+                      </Tooltip>
+
                       <Tooltip title="Print Dispatch Label">
                         <IconButton
                           onClick={() => handlePrintClick(order)}
@@ -717,6 +800,14 @@ const ProcessedOrders = () => {
               />
 
               <TextField
+                label="Mobile Number"
+                name="mobileNumber"
+                value={dispatchForm.mobileNumber}
+                onChange={handleDispatchInputChange}
+                fullWidth
+              />
+
+              <TextField
                 label="Invoice Number"
                 name="invoiceNumber"
                 value={dispatchForm.invoiceNumber}
@@ -841,6 +932,7 @@ const ProcessedOrders = () => {
                 rows={3}
                 fullWidth
                 required
+                disabled={isTransportReadonly}
               />
 
               {statusLogs.length > 0 && (
@@ -872,6 +964,24 @@ const ProcessedOrders = () => {
             <Button variant="contained" onClick={handleTransportSubmit}>
               Submit
             </Button>
+          </DialogActions>
+        </Dialog>
+        <Dialog
+          open={errorPopupOpen}
+          onClose={() => setErrorPopupOpen(false)}
+          maxWidth="xs"
+          fullWidth
+        >
+          <DialogTitle>Status Change Error</DialogTitle>
+
+          <DialogContent>
+            <Typography color="error" sx={{ fontWeight: 700 }}>
+              {errorPopupMessage}
+            </Typography>
+          </DialogContent>
+
+          <DialogActions>
+            <Button onClick={() => setErrorPopupOpen(false)}>OK</Button>
           </DialogActions>
         </Dialog>
         <Dialog
@@ -934,6 +1044,64 @@ const ProcessedOrders = () => {
             <Button variant="contained" onClick={handleRemarksSubmit}>
               Submit
             </Button>
+          </DialogActions>
+        </Dialog>
+        <Dialog
+          open={openItemsModal}
+          onClose={() => setOpenItemsModal(false)}
+          fullWidth
+          maxWidth="lg"
+        >
+          <DialogTitle>
+            <Typography variant="h6" sx={{ fontWeight: 700 }}>
+              Order Items
+            </Typography>
+
+            <Typography variant="body2" color="text.secondary">
+              ID: {selectedOrder?.id} | Store:{" "}
+              {selectedOrder?.selectedStoreName} | Order:{" "}
+              {selectedOrder?.orderNumber}
+            </Typography>
+          </DialogTitle>
+
+          <DialogContent dividers sx={{ maxHeight: "70vh" }}>
+            <TableContainer component={Paper}>
+              <Table stickyHeader size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>S.No</TableCell>
+                    <TableCell>Particulars</TableCell>
+                    <TableCell>Packing</TableCell>
+                    <TableCell>Company</TableCell>
+                    <TableCell>Qty</TableCell>
+                  </TableRow>
+                </TableHead>
+
+                <TableBody>
+                  {orderItems.map((item) => (
+                    <TableRow key={item.id}>
+                      <TableCell>{item.s_no}</TableCell>
+                      <TableCell>{item.particulars}</TableCell>
+                      <TableCell>{item.packing}</TableCell>
+                      <TableCell>{item.company}</TableCell>
+                      <TableCell>{item.qty}</TableCell>
+                    </TableRow>
+                  ))}
+
+                  {orderItems.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={5} align="center">
+                        No items found
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </DialogContent>
+
+          <DialogActions>
+            <Button onClick={() => setOpenItemsModal(false)}>Close</Button>
           </DialogActions>
         </Dialog>
       </Box>
