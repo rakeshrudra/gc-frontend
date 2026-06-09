@@ -74,3 +74,8 @@ export const getAdmins = async () => {
   const response = await api.get('/admins');
   return response.data;
 };
+
+export const getProcessedOrderItems = async (id) => {
+  const response = await api.get(`/processed-orders/${id}/items`);
+  return response.data;
+};

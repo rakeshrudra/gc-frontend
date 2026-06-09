@@ -324,6 +324,7 @@ const Dashboard = () => {
             docHeader={docHeader}
             totalRows={results.length}
             totalAmount={formatAmount(totalUploadAmount)}
+            items={results}
             onClose={() => setShowProcessCard(false)}
             onSuccess={() => {
               setShowProcessCard(false);

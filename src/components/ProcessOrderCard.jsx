@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Paper,
@@ -8,14 +8,14 @@ import {
   TextField,
   Stack,
   Alert,
-} from '@mui/material';
-import { getStores, createProcessedOrder } from '../services/processedOrders';
+} from "@mui/material";
+import { getStores, createProcessedOrder } from "../services/processedOrders";
 
 const extractOrderDetails = (docHeader) => {
   const lines = docHeader?.lines || [];
-  const text = lines.join(' ');
+  const text = lines.join(" ");
 
-  const extractedStoreName = lines[0] || '';
+  const extractedStoreName = lines[0] || "";
 
   const gstinMatch = text.match(/GSTIN\s*:\s*([A-Z0-9]+)/i);
   const orderMatch = text.match(/Order No\s*\|\s*([A-Z0-9-]+)/i);
@@ -24,10 +24,10 @@ const extractOrderDetails = (docHeader) => {
 
   return {
     extractedStoreName,
-    gstin: gstinMatch?.[1] || '',
-    orderNumber: orderMatch?.[1] || '',
-    orderDate: dateMatch?.[1] || '',
-    dlNumber: dlMatch?.[1] || '',
+    gstin: gstinMatch?.[1] || "",
+    orderNumber: orderMatch?.[1] || "",
+    orderDate: dateMatch?.[1] || "",
+    dlNumber: dlMatch?.[1] || "",
   };
 };
 
@@ -35,14 +35,15 @@ const ProcessOrderCard = ({
   docHeader,
   totalRows,
   totalAmount,
+  items = [],
   onClose,
   onSuccess,
 }) => {
   const [stores, setStores] = useState([]);
-  const [selectedStoreId, setSelectedStoreId] = useState('');
-  const [confirmedStoreId, setConfirmedStoreId] = useState('');
+  const [selectedStoreId, setSelectedStoreId] = useState("");
+  const [confirmedStoreId, setConfirmedStoreId] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const orderDetails = extractOrderDetails(docHeader);
 
@@ -52,7 +53,7 @@ const ProcessOrderCard = ({
         const data = await getStores();
         setStores(data || []);
       } catch (err) {
-        setError('Failed to load stores');
+        setError("Failed to load stores");
       }
     };
 
@@ -60,7 +61,7 @@ const ProcessOrderCard = ({
   }, []);
 
   const selectedStore = stores.find(
-    (store) => String(store.id) === String(selectedStoreId)
+    (store) => String(store.id) === String(selectedStoreId),
   );
 
   const isStoreConfirmed =
@@ -68,34 +69,34 @@ const ProcessOrderCard = ({
 
   const handleStoreChange = (e) => {
     setSelectedStoreId(e.target.value);
-    setConfirmedStoreId('');
-    setError('');
+    setConfirmedStoreId("");
+    setError("");
   };
 
   const handleConfirmStore = () => {
     if (!selectedStoreId) {
-      setError('Please select a store first.');
+      setError("Please select a store first.");
       return;
     }
 
     setConfirmedStoreId(selectedStoreId);
-    setError('');
+    setError("");
   };
 
   const handleSubmit = async () => {
     if (!selectedStoreId) {
-      setError('Please select a store before submitting.');
+      setError("Please select a store before submitting.");
       return;
     }
 
     if (!isStoreConfirmed) {
-      setError('Please confirm the selected store before submitting.');
+      setError("Please confirm the selected store before submitting.");
       return;
     }
 
     try {
       setLoading(true);
-      setError('');
+      setError("");
 
       const payload = {
         extractedStoreName: orderDetails.extractedStoreName,
@@ -104,16 +105,25 @@ const ProcessOrderCard = ({
         dlNumber: orderDetails.dlNumber,
         orderNumber: orderDetails.orderNumber,
         orderDate: orderDetails.orderDate,
+        items: items.map((item, index) => ({
+          s_no: item.s_no || item.sNo || index + 1,
+          particulars:
+            item.particulars || item.Particulars || item["Particulars"] || "",
+          packing: item.packing || item.Packing || item["Packing"] || "",
+          company: item.company || item.Company || item["Company"] || "",
+          qty: Number(item.qty || item.Qty || item["Qty."] || 0),
+        })),
       };
 
       await createProcessedOrder(payload);
 
       onSuccess?.();
     } catch (err) {
-      const message =
-        err.response?.data?.message || 'Failed to process order';
+      const message = err.response?.data?.message || "Failed to process order";
 
-      if (message === 'This order has already been processed for selected store') {
+      if (
+        message === "This order has already been processed for selected store"
+      ) {
         onSuccess?.();
         return;
       }
@@ -132,12 +142,12 @@ const ProcessOrderCard = ({
         mb: 2,
         p: 2,
         borderRadius: 2,
-        border: '1px solid #d1f0ed',
+        border: "1px solid #d1f0ed",
       }}
     >
       <Typography
         variant="h6"
-        sx={{ fontWeight: 900, color: '#0f9f9a', mb: 2 }}
+        sx={{ fontWeight: 900, color: "#0f9f9a", mb: 2 }}
       >
         Process Order
       </Typography>
@@ -151,10 +161,10 @@ const ProcessOrderCard = ({
       <Stack spacing={2}>
         <Box
           sx={{
-            display: 'grid',
+            display: "grid",
             gridTemplateColumns: {
-              xs: '1fr',
-              md: 'repeat(3, 1fr)',
+              xs: "1fr",
+              md: "repeat(3, 1fr)",
             },
             gap: 2,
           }}
@@ -216,8 +226,8 @@ const ProcessOrderCard = ({
             fullWidth
             sx={{
               gridColumn: {
-                xs: 'auto',
-                md: 'span 2',
+                xs: "auto",
+                md: "span 2",
               },
             }}
           >
@@ -243,7 +253,7 @@ const ProcessOrderCard = ({
               </Button>
             }
           >
-            Are you sure you want to assign this purchase order to{' '}
+            Are you sure you want to assign this purchase order to{" "}
             <strong>{selectedStore.storeName}</strong>?
           </Alert>
         )}
@@ -254,7 +264,7 @@ const ProcessOrderCard = ({
           </Alert>
         )}
 
-        <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+        <Box sx={{ display: "flex", gap: 1, justifyContent: "flex-end" }}>
           <Button onClick={onClose} variant="outlined">
             Cancel
           </Button>
@@ -263,9 +273,9 @@ const ProcessOrderCard = ({
             onClick={handleSubmit}
             variant="contained"
             disabled={loading || !isStoreConfirmed}
-            sx={{ backgroundColor: '#0f9f9a' }}
+            sx={{ backgroundColor: "#0f9f9a" }}
           >
-            {loading ? 'Opening Orders...' : 'Submit Process Order'}
+            {loading ? "Opening Orders..." : "Submit Process Order"}
           </Button>
         </Box>
       </Stack>
@@ -273,4 +283,4 @@ const ProcessOrderCard = ({
   );
 };
 
-export default ProcessOrderCard;  
+export default ProcessOrderCard;
