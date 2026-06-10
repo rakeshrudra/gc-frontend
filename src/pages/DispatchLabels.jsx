@@ -50,19 +50,20 @@ const DispatchLabels = () => {
     labels.push(
       <Box
         key={i}
-        sx={{
-          width: "4in",
-          height: "6in",
-          margin: "20px auto",
-          padding: "12px",
-          background: "#fff",
-          fontFamily: '"Open Sans", sans-serif',
-          fontSize: "16px",
-          fontWeight: 600,
-          color: "#111",
-          pageBreakAfter: "always",
-          boxSizing: "border-box",
-        }}
+        className="print-label"
+sx={{
+  width: "4in",
+  height: "6in",
+  margin: "0 auto",
+  padding: "12px",
+  background: "#fff",
+  fontFamily: '"Open Sans", sans-serif',
+  fontSize: "16px",
+  fontWeight: 600,
+  color: "#111",
+  boxSizing: "border-box",
+  pageBreakAfter: "always", // ADD THIS
+}}
       >
         <Box sx={{ height: "1.85in", display: "flex" }}>
           <Box sx={{ width: "50%" }}>
@@ -159,9 +160,64 @@ const DispatchLabels = () => {
   }
 
   return (
-    <Box sx={{ minHeight: "100vh", background: "#ffffff", py: 2 }}>
-      {labels}
-    </Box>
+    <>
+     <style>
+  {`
+@media print {
+  body * {
+    visibility: visible !important;
+  }
+
+  @page {
+    size: 4in 6in;
+    margin: 0;
+  }
+
+  html, body, #root {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+  }
+
+  .labels-container {
+    margin: 0 !important;
+    padding: 0 !important;
+    display: block !important;
+  }
+
+  .print-label {
+    visibility: visible !important;
+    width: 4in !important;
+    height: 6in !important;
+    margin: 0 !important;
+    padding: 12px !important;
+    background: white !important;
+    box-sizing: border-box !important;
+    display: block !important;
+    page-break-after: always !important;
+    break-after: page !important;
+    overflow: hidden !important;
+  }
+
+  .print-label * {
+    visibility: visible !important;
+  }
+
+  .print-label:last-child {
+    page-break-after: auto !important;
+    break-after: auto !important;
+  }
+}
+  `}
+</style>
+
+      <Box
+        className="labels-container"
+        sx={{ background: "#ffffff", p: 0, m: 0 }}
+      >
+        {labels}
+      </Box>
+    </>
   );
 };
 
