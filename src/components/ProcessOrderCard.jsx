@@ -104,6 +104,7 @@ const ProcessOrderCard = ({
         gstin: orderDetails.gstin,
         dlNumber: orderDetails.dlNumber,
         orderNumber: orderDetails.orderNumber,
+        poDate: orderDetails.orderDate,
         orderDate: orderDetails.orderDate,
         items: items.map((item, index) => ({
           s_no: item.s_no || item.sNo || index + 1,

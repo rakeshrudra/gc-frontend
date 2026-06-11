@@ -169,6 +169,21 @@ const ProcessedOrders = () => {
     }
   };
 
+  const getProcessingHours = (orderDate, dispatchDate) => {
+    if (!orderDate || !dispatchDate) return "-";
+
+    const diffMs = new Date(dispatchDate) - new Date(orderDate);
+    const totalMinutes = Math.floor(diffMs / (1000 * 60));
+
+    const days = Math.floor(totalMinutes / (60 * 24));
+    const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
+    const minutes = totalMinutes % 60;
+
+    if (days > 0) return `${days} day(s) ${hours} hour(s) ${minutes} min(s)`;
+    if (hours > 0) return `${hours} hour(s) ${minutes} min(s)`;
+    return `${minutes} min(s)`;
+  };
+
   useEffect(() => {
     loadOrders();
   }, [sort, storeSearch, page]);
@@ -472,6 +487,7 @@ const ProcessedOrders = () => {
   };
 
   const showAssignedToColumn = orders.some((order) => order.assignedTo);
+  const showDispatchColumns = orders.some((order) => order.dispatchDate);
 
   return (
     <>
@@ -551,7 +567,10 @@ const ProcessedOrders = () => {
                 <TableCell>Extracted Store</TableCell>
                 <TableCell>Selected Store</TableCell>
                 <TableCell>Order Number</TableCell>
+                <TableCell>PO Date</TableCell>
                 <TableCell>Order Date</TableCell>
+                {showDispatchColumns && <TableCell>Dispatch Date</TableCell>}
+                {showDispatchColumns && <TableCell>Processing Hours</TableCell>}
                 {showAssignedToColumn && <TableCell>Assigned To</TableCell>}
                 <TableCell>Status</TableCell>
                 <TableCell
@@ -584,6 +603,15 @@ const ProcessedOrders = () => {
                   <TableCell>{order.selectedStoreName || "—"}</TableCell>
                   <TableCell>{order.orderNumber}</TableCell>
                   <TableCell>
+                    {order.poDate
+                      ? new Date(order.poDate).toLocaleDateString("en-IN", {
+                          day: "2-digit",
+                          month: "2-digit",
+                          year: "numeric",
+                        })
+                      : "-"}
+                  </TableCell>
+                  <TableCell>
                     {order.uploadDateTime
                       ? new Date(order.uploadDateTime).toLocaleString("en-IN", {
                           day: "2-digit",
@@ -595,6 +623,29 @@ const ProcessedOrders = () => {
                         })
                       : order.orderDate}
                   </TableCell>
+                  {showDispatchColumns && (
+                    <TableCell>
+                      {order.dispatchDate
+                        ? new Date(order.dispatchDate).toLocaleString("en-IN", {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            hour12: true,
+                          })
+                        : "-"}
+                    </TableCell>
+                  )}
+
+                  {showDispatchColumns && (
+                    <TableCell>
+                      {getProcessingHours(
+                        order.uploadDateTime,
+                        order.dispatchDate,
+                      )}
+                    </TableCell>
+                  )}
                   {showAssignedToColumn && (
                     <TableCell>{order.assignedTo || "-"}</TableCell>
                   )}
