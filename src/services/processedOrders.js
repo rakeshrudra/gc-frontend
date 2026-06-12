@@ -79,3 +79,11 @@ export const getProcessedOrderItems = async (id) => {
   const response = await api.get(`/processed-orders/${id}/items`);
   return response.data;
 };
+
+export const createRemark = async (id, remarks) => {
+  const response = await api.post(`/processed-orders/${id}/remarks`, {
+    remarks,
+  });
+
+  return response.data;
+};
