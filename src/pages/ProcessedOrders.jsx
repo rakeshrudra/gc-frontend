@@ -41,6 +41,7 @@ import {
   getStatusLogs,
   getAdmins,
   getProcessedOrderItems,
+  createRemark,
 } from "../services/processedOrders";
 
 const statuses = [
@@ -289,26 +290,13 @@ const ProcessedOrders = () => {
         return;
       }
 
-      const response = await updateProcessedOrderStatus(
-        selectedOrder.id,
-        pendingStatus,
-        remarks.trim(),
-      );
-      console.log("Pending Status:", pendingStatus);
-      console.log("API Response:", response);
-
-      setOrders((prev) =>
-        prev.map((item) =>
-          item.id === selectedOrder.id
-            ? { ...item, status: pendingStatus }
-            : item,
-        ),
-      );
+      const response = await createRemark(selectedOrder.id, remarks.trim());
 
       setStatusLogs(response.logs || []);
+      setRemarks("");
       setOpenRemarksModal(false);
     } catch (err) {
-      const message = err.response?.data?.message || "Failed to update status";
+      const message = err.response?.data?.message || "Failed to save remark";
 
       setError(message);
       setErrorPopupMessage(message);
