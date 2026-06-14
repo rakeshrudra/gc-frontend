@@ -130,6 +130,7 @@ const ProcessedOrders = () => {
   const [openDispatchModal, setOpenDispatchModal] = useState(false);
   const [openTransportModal, setOpenTransportModal] = useState(false);
   const [openRemarksModal, setOpenRemarksModal] = useState(false);
+  const [isRemarkOnly, setIsRemarkOnly] = useState(false);
   const [pendingStatus, setPendingStatus] = useState("");
   const [remarks, setRemarks] = useState("");
   const [statusLogs, setStatusLogs] = useState([]);
@@ -258,6 +259,7 @@ const ProcessedOrders = () => {
     setError("");
     setSelectedOrder(order);
     setPendingStatus(status);
+    setIsRemarkOnly(false);
     setRemarks("");
     setStatusLogs([]);
 
@@ -290,7 +292,25 @@ const ProcessedOrders = () => {
         return;
       }
 
-      const response = await createRemark(selectedOrder.id, remarks.trim());
+      let response;
+
+      if (isRemarkOnly) {
+        response = await createRemark(selectedOrder.id, remarks.trim());
+      } else {
+        response = await updateProcessedOrderStatus(
+          selectedOrder.id,
+          pendingStatus,
+          remarks.trim(),
+        );
+
+        setOrders((prev) =>
+          prev.map((item) =>
+            item.id === selectedOrder.id
+              ? { ...item, status: pendingStatus }
+              : item,
+          ),
+        );
+      }
 
       setStatusLogs(response.logs || []);
       setRemarks("");
@@ -303,7 +323,6 @@ const ProcessedOrders = () => {
       setErrorPopupOpen(true);
     }
   };
-
   const handlePrintClick = async (order) => {
     try {
       setError("");
@@ -320,7 +339,6 @@ const ProcessedOrders = () => {
     try {
       setError("");
       setSelectedOrder(order);
-
       const data = await getProcessedOrderItems(order.id);
       setOrderItems(data || []);
       setOpenItemsModal(true);
@@ -333,6 +351,7 @@ const ProcessedOrders = () => {
     try {
       setError("");
       setSelectedOrder(order);
+      setIsRemarkOnly(true);
       setRemarks("");
 
       const logs = await getStatusLogs(order.id);
