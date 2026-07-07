@@ -26,6 +26,7 @@ import {
   DialogActions,
   IconButton,
   Tooltip,
+  CircularProgress,
 } from "@mui/material";
 
 import PrintIcon from "@mui/icons-material/Print";
@@ -135,6 +136,15 @@ const ProcessedOrders = () => {
   const [remarks, setRemarks] = useState("");
   const [statusLogs, setStatusLogs] = useState([]);
   const [isTransportReadonly, setIsTransportReadonly] = useState(false);
+  const [ordersLoading, setOrdersLoading] = useState(false);
+  const [itemsLoading, setItemsLoading] = useState(false);
+  const [statusLogsLoading, setStatusLogsLoading] = useState(false);
+  const [transportDetailsLoading, setTransportDetailsLoading] = useState(false);
+  const [statusUpdateLoading, setStatusUpdateLoading] = useState(false);
+  const [remarkSubmitLoading, setRemarkSubmitLoading] = useState(false);
+  const [dispatchSubmitLoading, setDispatchSubmitLoading] = useState(false);
+  const [transportSubmitLoading, setTransportSubmitLoading] = useState(false);
+  const [dispatchLabelLoadingId, setDispatchLabelLoadingId] = useState(null);
 
   const [selectedOrder, setSelectedOrder] = useState(null);
 
@@ -157,6 +167,7 @@ const ProcessedOrders = () => {
   const loadOrders = async () => {
     try {
       setError("");
+      setOrdersLoading(true);
       const result = await getProcessedOrders(
         sort,
         storeSearch,
@@ -168,6 +179,8 @@ const ProcessedOrders = () => {
       setTotalOrders(result.total || 0);
     } catch (err) {
       setError("Failed to load processed orders");
+    } finally {
+      setOrdersLoading(false);
     }
   };
 
@@ -226,8 +239,10 @@ const ProcessedOrders = () => {
 
   const openTransportPopup = async (order) => {
     setSelectedOrder(order);
+    setOpenTransportModal(true);
 
     try {
+      setTransportDetailsLoading(true);
       const details = await getTransportDetails(order.id);
 
       setTransportForm({
@@ -241,9 +256,9 @@ const ProcessedOrders = () => {
         mobileNumber: "",
         pickupLocation: "",
       });
+    } finally {
+      setTransportDetailsLoading(false);
     }
-
-    setOpenTransportModal(true);
   };
 
   const handleStatusChange = async (order, status) => {
@@ -263,27 +278,28 @@ const ProcessedOrders = () => {
     setRemarks("");
     setStatusLogs([]);
 
+    if (status === "READY_TO_DISPATCH") {
+      openDispatchPopup(order);
+    } else if (status === "DISPATCHED") {
+      openTransportPopup(order);
+    } else {
+      setOpenRemarksModal(true);
+    }
+
     try {
+      setStatusLogsLoading(true);
       const logs = await getStatusLogs(order.id);
       setStatusLogs(logs || []);
     } catch (err) {
       setStatusLogs([]);
+    } finally {
+      setStatusLogsLoading(false);
     }
-
-    if (status === "READY_TO_DISPATCH") {
-      openDispatchPopup(order);
-      return;
-    }
-
-    if (status === "DISPATCHED") {
-      openTransportPopup(order);
-      return;
-    }
-
-    setOpenRemarksModal(true);
   };
 
   const handleRemarksSubmit = async () => {
+    if (statusUpdateLoading || remarkSubmitLoading) return;
+
     try {
       setError("");
 
@@ -295,8 +311,10 @@ const ProcessedOrders = () => {
       let response;
 
       if (isRemarkOnly) {
+        setRemarkSubmitLoading(true);
         response = await createRemark(selectedOrder.id, remarks.trim());
       } else {
+        setStatusUpdateLoading(true);
         response = await updateProcessedOrderStatus(
           selectedOrder.id,
           pendingStatus,
@@ -321,17 +339,25 @@ const ProcessedOrders = () => {
       setError(message);
       setErrorPopupMessage(message);
       setErrorPopupOpen(true);
+    } finally {
+      setRemarkSubmitLoading(false);
+      setStatusUpdateLoading(false);
     }
   };
   const handlePrintClick = async (order) => {
+    if (dispatchLabelLoadingId === order.id) return;
+
     try {
       setError("");
+      setDispatchLabelLoadingId(order.id);
 
       await getDispatchLabel(order.id);
 
       window.open(`/dispatch-labels/${order.id}`, "_blank");
     } catch (err) {
       openDispatchPopup(order);
+    } finally {
+      setDispatchLabelLoadingId(null);
     }
   };
 
@@ -339,11 +365,15 @@ const ProcessedOrders = () => {
     try {
       setError("");
       setSelectedOrder(order);
+      setOrderItems([]);
+      setOpenItemsModal(true);
+      setItemsLoading(true);
       const data = await getProcessedOrderItems(order.id);
       setOrderItems(data || []);
-      setOpenItemsModal(true);
     } catch (err) {
       setError("Failed to load order items");
+    } finally {
+      setItemsLoading(false);
     }
   };
 
@@ -353,13 +383,16 @@ const ProcessedOrders = () => {
       setSelectedOrder(order);
       setIsRemarkOnly(true);
       setRemarks("");
+      setStatusLogs([]);
+      setOpenRemarksModal(true);
+      setStatusLogsLoading(true);
 
       const logs = await getStatusLogs(order.id);
       setStatusLogs(logs || []);
-
-      setOpenRemarksModal(true);
     } catch (err) {
       setError("Failed to load remarks history");
+    } finally {
+      setStatusLogsLoading(false);
     }
   };
 
@@ -386,6 +419,8 @@ const ProcessedOrders = () => {
   };
 
   const handleDispatchSubmit = async () => {
+    if (dispatchSubmitLoading) return;
+
     try {
       setError("");
 
@@ -417,6 +452,7 @@ const ProcessedOrders = () => {
         return;
       }
 
+      setDispatchSubmitLoading(true);
       await updateProcessedOrderStatus(
         selectedOrder.id,
         "READY_TO_DISPATCH",
@@ -445,10 +481,14 @@ const ProcessedOrders = () => {
         err.response?.data?.message || "Failed to create dispatch label";
 
       setError(message);
+    } finally {
+      setDispatchSubmitLoading(false);
     }
   };
 
   const handleTransportSubmit = async () => {
+    if (transportSubmitLoading) return;
+
     try {
       setError("");
 
@@ -468,6 +508,7 @@ const ProcessedOrders = () => {
         return;
       }
 
+      setTransportSubmitLoading(true);
       await updateProcessedOrderStatus(
         selectedOrder.id,
         "DISPATCHED",
@@ -490,11 +531,15 @@ const ProcessedOrders = () => {
         err.response?.data?.message || "Failed to save transport details";
 
       setError(message);
+    } finally {
+      setTransportSubmitLoading(false);
     }
   };
 
   const showAssignedToColumn = orders.some((order) => order.assignedTo);
   const showDispatchColumns = orders.some((order) => order.dispatchDate);
+  const tableColumnCount =
+    8 + (showDispatchColumns ? 2 : 0) + (showAssignedToColumn ? 1 : 0);
 
   return (
     <>
@@ -593,8 +638,26 @@ const ProcessedOrders = () => {
             </TableHead>
 
             <TableBody>
-              {orders.map((order) => (
-                <TableRow key={order.id}>
+              {ordersLoading ? (
+                <TableRow>
+                  <TableCell colSpan={tableColumnCount} align="center">
+                    <Box
+                      sx={{
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        gap: 1,
+                        py: 3,
+                      }}
+                    >
+                      <CircularProgress size={24} />
+                      <Typography>Loading processed orders...</Typography>
+                    </Box>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                orders.map((order) => (
+                  <TableRow key={order.id}>
                   <TableCell
                     onClick={() => handleViewItems(order)}
                     sx={{
@@ -715,20 +778,27 @@ const ProcessedOrders = () => {
                         </IconButton>
                       </Tooltip>
 
-                      <Tooltip title="Print Dispatch Label">
-                        <IconButton
-                          onClick={() => handlePrintClick(order)}
-                          sx={{
-                            color: "#0f9f9a",
-                            border: "1px solid #0f9f9a",
-                            mr: 1,
-                            "&:hover": {
-                              backgroundColor: "#e6f7f6",
-                            },
-                          }}
-                        >
-                          <PrintIcon />
-                        </IconButton>
+                      <Tooltip title={dispatchLabelLoadingId === order.id ? "Loading..." : "Print Dispatch Label"}>
+                        <span>
+                          <IconButton
+                            onClick={() => handlePrintClick(order)}
+                            disabled={dispatchLabelLoadingId === order.id}
+                            sx={{
+                              color: "#0f9f9a",
+                              border: "1px solid #0f9f9a",
+                              mr: 1,
+                              "&:hover": {
+                                backgroundColor: "#e6f7f6",
+                              },
+                            }}
+                          >
+                            {dispatchLabelLoadingId === order.id ? (
+                              <CircularProgress size={18} color="inherit" />
+                            ) : (
+                              <PrintIcon />
+                            )}
+                          </IconButton>
+                        </span>
                       </Tooltip>
 
                       <Tooltip title="View Remarks History">
@@ -763,15 +833,13 @@ const ProcessedOrders = () => {
                       </Tooltip>
                     </Box>
                   </TableCell>
-                </TableRow>
-              ))}
+                  </TableRow>
+                ))
+              )}
 
-              {orders.length === 0 && (
+              {!ordersLoading && orders.length === 0 && (
                 <TableRow>
-                  <TableCell
-                    colSpan={showAssignedToColumn ? 8 : 7}
-                    align="center"
-                  >
+                  <TableCell colSpan={tableColumnCount} align="center">
                     No processed orders found
                   </TableCell>
                 </TableRow>
@@ -791,7 +859,7 @@ const ProcessedOrders = () => {
         >
           <Button
             variant="outlined"
-            disabled={page === 1}
+            disabled={page === 1 || ordersLoading}
             onClick={() => setPage(page - 1)}
           >
             Previous
@@ -804,7 +872,7 @@ const ProcessedOrders = () => {
 
           <Button
             variant="outlined"
-            disabled={page * rowsPerPage >= totalOrders}
+            disabled={page * rowsPerPage >= totalOrders || ordersLoading}
             onClick={() => setPage(page + 1)}
           >
             Next
@@ -906,6 +974,21 @@ const ProcessedOrders = () => {
                 required
               />
 
+              {statusLogsLoading && (
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    gap: 1,
+                    py: 1,
+                  }}
+                >
+                  <CircularProgress size={20} />
+                  <Typography variant="body2">Loading history...</Typography>
+                </Box>
+              )}
+
               {statusLogs.length > 0 && (
                 <Box>
                   <Typography sx={{ fontWeight: 800, mb: 1 }}>
@@ -932,8 +1015,17 @@ const ProcessedOrders = () => {
           <DialogActions>
             <Button onClick={() => setOpenDispatchModal(false)}>Cancel</Button>
 
-            <Button variant="contained" onClick={handleDispatchSubmit}>
-              Submit
+            <Button
+              variant="contained"
+              onClick={handleDispatchSubmit}
+              disabled={dispatchSubmitLoading}
+              startIcon={
+                dispatchSubmitLoading ? (
+                  <CircularProgress size={16} color="inherit" />
+                ) : null
+              }
+            >
+              {dispatchSubmitLoading ? "Submitting..." : "Submit"}
             </Button>
           </DialogActions>
         </Dialog>
@@ -957,14 +1049,19 @@ const ProcessedOrders = () => {
           </DialogTitle>
 
           <DialogContent>
-            <Stack spacing={2} sx={{ mt: 1 }}>
-              <TextField
-                label="Bus No"
-                name="busNo"
-                value={transportForm.busNo}
-                onChange={handleTransportInputChange}
-                fullWidth
-              />
+            {transportDetailsLoading ? (
+              <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
+                <CircularProgress />
+              </Box>
+            ) : (
+              <Stack spacing={2} sx={{ mt: 1 }}>
+                <TextField
+                  label="Bus No"
+                  name="busNo"
+                  value={transportForm.busNo}
+                  onChange={handleTransportInputChange}
+                  fullWidth
+                />
 
               <TextField
                 label="Mobile Number"
@@ -993,34 +1090,59 @@ const ProcessedOrders = () => {
                 disabled={isTransportReadonly}
               />
 
-              {statusLogs.length > 0 && (
-                <Box>
-                  <Typography sx={{ fontWeight: 800, mb: 1 }}>
-                    History
-                  </Typography>
+                {statusLogsLoading && (
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      gap: 1,
+                      py: 1,
+                    }}
+                  >
+                    <CircularProgress size={20} />
+                    <Typography variant="body2">Loading history...</Typography>
+                  </Box>
+                )}
 
-                  {statusLogs.map((log) => (
-                    <Paper key={log.id} sx={{ p: 1.5, mb: 1 }}>
-                      <Typography sx={{ fontWeight: 700 }}>
-                        {log.status}
-                      </Typography>
-                      <Typography>{log.remarks}</Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {log.adminName} -{" "}
-                        {new Date(log.createdAt).toLocaleString()}
-                      </Typography>
-                    </Paper>
-                  ))}
-                </Box>
-              )}
-            </Stack>
+                {statusLogs.length > 0 && (
+                  <Box>
+                    <Typography sx={{ fontWeight: 800, mb: 1 }}>
+                      History
+                    </Typography>
+
+                    {statusLogs.map((log) => (
+                      <Paper key={log.id} sx={{ p: 1.5, mb: 1 }}>
+                        <Typography sx={{ fontWeight: 700 }}>
+                          {log.status}
+                        </Typography>
+                        <Typography>{log.remarks}</Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {log.adminName} -{" "}
+                          {new Date(log.createdAt).toLocaleString()}
+                        </Typography>
+                      </Paper>
+                    ))}
+                  </Box>
+                )}
+              </Stack>
+            )}
           </DialogContent>
 
           <DialogActions>
             <Button onClick={() => setOpenTransportModal(false)}>Skip</Button>
 
-            <Button variant="contained" onClick={handleTransportSubmit}>
-              Submit
+            <Button
+              variant="contained"
+              onClick={handleTransportSubmit}
+              disabled={transportSubmitLoading || transportDetailsLoading}
+              startIcon={
+                transportSubmitLoading ? (
+                  <CircularProgress size={16} color="inherit" />
+                ) : null
+              }
+            >
+              {transportSubmitLoading ? "Saving..." : "Submit"}
             </Button>
           </DialogActions>
         </Dialog>
@@ -1062,45 +1184,64 @@ const ProcessedOrders = () => {
           </DialogTitle>
 
           <DialogContent>
-            <Stack spacing={2} sx={{ mt: 1 }}>
-              <TextField
-                label="Remarks"
-                value={remarks}
-                onChange={(e) => setRemarks(e.target.value)}
-                multiline
-                rows={3}
-                fullWidth
-                required
-              />
+            {statusLogsLoading ? (
+              <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
+                <CircularProgress />
+              </Box>
+            ) : (
+              <Stack spacing={2} sx={{ mt: 1 }}>
+                <TextField
+                  label="Remarks"
+                  value={remarks}
+                  onChange={(e) => setRemarks(e.target.value)}
+                  multiline
+                  rows={3}
+                  fullWidth
+                  required
+                />
 
-              {statusLogs.length > 0 && (
-                <Box>
-                  <Typography sx={{ fontWeight: 800, mb: 1 }}>
-                    History
-                  </Typography>
+                {statusLogs.length > 0 && (
+                  <Box>
+                    <Typography sx={{ fontWeight: 800, mb: 1 }}>
+                      History
+                    </Typography>
 
-                  {statusLogs.map((log) => (
-                    <Paper key={log.id} sx={{ p: 1.5, mb: 1 }}>
-                      <Typography sx={{ fontWeight: 700 }}>
-                        {log.status}
-                      </Typography>
-                      <Typography>{log.remarks}</Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {log.adminName} -{" "}
-                        {new Date(log.createdAt).toLocaleString()}
-                      </Typography>
-                    </Paper>
-                  ))}
-                </Box>
-              )}
-            </Stack>
+                    {statusLogs.map((log) => (
+                      <Paper key={log.id} sx={{ p: 1.5, mb: 1 }}>
+                        <Typography sx={{ fontWeight: 700 }}>
+                          {log.status}
+                        </Typography>
+                        <Typography>{log.remarks}</Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {log.adminName} -{" "}
+                          {new Date(log.createdAt).toLocaleString()}
+                        </Typography>
+                      </Paper>
+                    ))}
+                  </Box>
+                )}
+              </Stack>
+            )}
           </DialogContent>
 
           <DialogActions>
             <Button onClick={() => setOpenRemarksModal(false)}>Cancel</Button>
 
-            <Button variant="contained" onClick={handleRemarksSubmit}>
-              Submit
+            <Button
+              variant="contained"
+              onClick={handleRemarksSubmit}
+              disabled={statusUpdateLoading || remarkSubmitLoading}
+              startIcon={
+                statusUpdateLoading || remarkSubmitLoading ? (
+                  <CircularProgress size={16} color="inherit" />
+                ) : null
+              }
+            >
+              {statusUpdateLoading || remarkSubmitLoading
+                ? isRemarkOnly
+                  ? "Saving..."
+                  : "Updating..."
+                : "Submit"}
             </Button>
           </DialogActions>
         </Dialog>
@@ -1123,39 +1264,45 @@ const ProcessedOrders = () => {
           </DialogTitle>
 
           <DialogContent dividers sx={{ maxHeight: "70vh" }}>
-            <TableContainer component={Paper}>
-              <Table stickyHeader size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>S.No</TableCell>
-                    <TableCell>Particulars</TableCell>
-                    <TableCell>Packing</TableCell>
-                    <TableCell>Company</TableCell>
-                    <TableCell>Qty</TableCell>
-                  </TableRow>
-                </TableHead>
-
-                <TableBody>
-                  {orderItems.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell>{item.s_no}</TableCell>
-                      <TableCell>{item.particulars}</TableCell>
-                      <TableCell>{item.packing}</TableCell>
-                      <TableCell>{item.company}</TableCell>
-                      <TableCell>{item.qty}</TableCell>
-                    </TableRow>
-                  ))}
-
-                  {orderItems.length === 0 && (
+            {itemsLoading ? (
+              <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
+                <CircularProgress />
+              </Box>
+            ) : (
+              <TableContainer component={Paper}>
+                <Table stickyHeader size="small">
+                  <TableHead>
                     <TableRow>
-                      <TableCell colSpan={5} align="center">
-                        No items found
-                      </TableCell>
+                      <TableCell>S.No</TableCell>
+                      <TableCell>Particulars</TableCell>
+                      <TableCell>Packing</TableCell>
+                      <TableCell>Company</TableCell>
+                      <TableCell>Qty</TableCell>
                     </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </TableContainer>
+                  </TableHead>
+
+                  <TableBody>
+                    {orderItems.map((item) => (
+                      <TableRow key={item.id}>
+                        <TableCell>{item.s_no}</TableCell>
+                        <TableCell>{item.particulars}</TableCell>
+                        <TableCell>{item.packing}</TableCell>
+                        <TableCell>{item.company}</TableCell>
+                        <TableCell>{item.qty}</TableCell>
+                      </TableRow>
+                    ))}
+
+                    {orderItems.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={5} align="center">
+                          No items found
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )}
           </DialogContent>
 
           <DialogActions>
