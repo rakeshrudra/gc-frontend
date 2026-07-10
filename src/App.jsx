@@ -16,6 +16,7 @@ import ResetPasswordPage from './pages/ResetPasswordPage';
 import Navbar from './components/Navbar';
 import ProcessedOrders from './pages/ProcessedOrders';
 import DispatchLabels from './pages/DispatchLabels';
+import ExpiryReturn from './pages/ExpiryReturn';
 
 const theme = createTheme({
   typography: {
@@ -184,6 +185,26 @@ function App() {
           element={
             <ProtectedRoute>
               <DispatchLabels />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/expiry-return"
+          element={
+            <ProtectedRoute>
+              <Box
+                sx={{
+                  minHeight: '100vh',
+                  background: '#f4fdfc',
+                }}
+              >
+                <Navbar />
+
+                <Container maxWidth="xl" sx={{ py: 3 }}>
+                  <ExpiryReturn />
+                </Container>
+              </Box>
             </ProtectedRoute>
           }
         />

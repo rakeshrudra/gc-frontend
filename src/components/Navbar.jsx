@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import React, { useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import AssignmentReturnIcon from "@mui/icons-material/AssignmentReturn";
 import {
   AppBar,
   Toolbar,
@@ -15,19 +16,19 @@ import {
   Divider,
   Menu,
   MenuItem,
-} from '@mui/material';
+} from "@mui/material";
 
-import MenuIcon from '@mui/icons-material/Menu';
-import LogoutIcon from '@mui/icons-material/Logout';
-import HomeIcon from '@mui/icons-material/Home';
-import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutlined';
-import SearchIcon from '@mui/icons-material/Search';
-import SettingsIcon from '@mui/icons-material/Settings';
-import LockResetIcon from '@mui/icons-material/LockReset';
-import TableChartIcon from '@mui/icons-material/TableChart';
+import MenuIcon from "@mui/icons-material/Menu";
+import LogoutIcon from "@mui/icons-material/Logout";
+import HomeIcon from "@mui/icons-material/Home";
+import HomeOutlinedIcon from "@mui/icons-material/HomeOutlined";
+import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutlined";
+import SearchIcon from "@mui/icons-material/Search";
+import SettingsIcon from "@mui/icons-material/Settings";
+import LockResetIcon from "@mui/icons-material/LockReset";
+import TableChartIcon from "@mui/icons-material/TableChart";
 
-import logo from '../assets/eops-logo.png';
+import logo from "../assets/eops-logo.png";
 
 const Navbar = ({ onMenuSelect }) => {
   const navigate = useNavigate();
@@ -36,13 +37,13 @@ const Navbar = ({ onMenuSelect }) => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [settingsAnchorEl, setSettingsAnchorEl] = useState(null);
 
-  const isHomePage = location.pathname === '/home';
+  const isHomePage = location.pathname === "/home";
   const settingsOpen = Boolean(settingsAnchorEl);
 
   const handleLogout = () => {
     sessionStorage.clear();
     localStorage.clear();
-    window.location.replace('/');
+    window.location.replace("/");
   };
 
   const handleSettingsOpen = (event) => {
@@ -55,13 +56,13 @@ const Navbar = ({ onMenuSelect }) => {
 
   const handleResetPassword = () => {
     handleSettingsClose();
-    navigate('/reset-password');
+    navigate("/reset-password");
   };
 
   const toggleDrawer = (open) => (event) => {
     if (
-      event.type === 'keydown' &&
-      (event.key === 'Tab' || event.key === 'Shift')
+      event.type === "keydown" &&
+      (event.key === "Tab" || event.key === "Shift")
     ) {
       return;
     }
@@ -82,7 +83,7 @@ const Navbar = ({ onMenuSelect }) => {
   };
 
   const handleHomeClick = () => {
-    navigate('/home');
+    navigate("/home");
   };
 
   const drawerContent = (
@@ -95,9 +96,9 @@ const Navbar = ({ onMenuSelect }) => {
       <Box
         sx={{
           p: 2,
-          display: 'flex',
-          alignItems: 'center',
-          background: 'linear-gradient(135deg, #e0fdf8, #e3f8ff)',
+          display: "flex",
+          alignItems: "center",
+          background: "linear-gradient(135deg, #e0fdf8, #e3f8ff)",
         }}
       >
         <img
@@ -110,7 +111,7 @@ const Navbar = ({ onMenuSelect }) => {
           variant="h6"
           sx={{
             fontWeight: 800,
-            color: '#0f9f9a',
+            color: "#0f9f9a",
           }}
         >
           Menu
@@ -122,9 +123,9 @@ const Navbar = ({ onMenuSelect }) => {
       <List>
         {/* HOME */}
         <ListItem disablePadding>
-          <ListItemButton onClick={() => handleMenuClick('/home')}>
+          <ListItemButton onClick={() => handleMenuClick("/home")}>
             <ListItemIcon>
-              <HomeOutlinedIcon sx={{ color: '#0f9f9a' }} />
+              <HomeOutlinedIcon sx={{ color: "#0f9f9a" }} />
             </ListItemIcon>
 
             <ListItemText
@@ -132,7 +133,7 @@ const Navbar = ({ onMenuSelect }) => {
                 <Typography
                   sx={{
                     fontWeight: 600,
-                    fontSize: '0.9rem',
+                    fontSize: "0.9rem",
                   }}
                 >
                   Home
@@ -145,10 +146,10 @@ const Navbar = ({ onMenuSelect }) => {
         {/* YES MAYBE REPORT */}
         <ListItem disablePadding>
           <ListItemButton
-            onClick={() => handleMenuClick('/dashboard', 'match')}
+            onClick={() => handleMenuClick("/dashboard", "match")}
           >
             <ListItemIcon>
-              <CheckCircleOutlineIcon sx={{ color: '#16a085' }} />
+              <CheckCircleOutlineIcon sx={{ color: "#16a085" }} />
             </ListItemIcon>
 
             <ListItemText
@@ -156,7 +157,7 @@ const Navbar = ({ onMenuSelect }) => {
                 <Typography
                   sx={{
                     fontWeight: 600,
-                    fontSize: '0.9rem',
+                    fontSize: "0.9rem",
                   }}
                 >
                   YES/MAYBE Report
@@ -168,11 +169,9 @@ const Navbar = ({ onMenuSelect }) => {
 
         {/* PROCESSED ORDERS */}
         <ListItem disablePadding>
-          <ListItemButton
-            onClick={() => handleMenuClick('/processed-orders')}
-          >
+          <ListItemButton onClick={() => handleMenuClick("/processed-orders")}>
             <ListItemIcon>
-              <TableChartIcon sx={{ color: '#8e24aa' }} />
+              <TableChartIcon sx={{ color: "#8e24aa" }} />
             </ListItemIcon>
 
             <ListItemText
@@ -180,10 +179,32 @@ const Navbar = ({ onMenuSelect }) => {
                 <Typography
                   sx={{
                     fontWeight: 600,
-                    fontSize: '0.9rem',
+                    fontSize: "0.9rem",
                   }}
                 >
                   Processed Orders
+                </Typography>
+              }
+            />
+          </ListItemButton>
+        </ListItem>
+
+        {/* EXPIRY RETURN */}
+        <ListItem disablePadding>
+          <ListItemButton onClick={() => handleMenuClick("/expiry-return")}>
+            <ListItemIcon>
+              <AssignmentReturnIcon sx={{ color: "#0f9f9a" }} />
+            </ListItemIcon>
+
+            <ListItemText
+              primary={
+                <Typography
+                  sx={{
+                    fontWeight: 600,
+                    fontSize: "0.9rem",
+                  }}
+                >
+                  Expiry Return
                 </Typography>
               }
             />
@@ -194,14 +215,11 @@ const Navbar = ({ onMenuSelect }) => {
         <ListItem disablePadding>
           <ListItemButton
             onClick={() =>
-              handleMenuClick(
-                '/medicine-vendor-search',
-                'searchMaster'
-              )
+              handleMenuClick("/medicine-vendor-search", "searchMaster")
             }
           >
             <ListItemIcon>
-              <SearchIcon sx={{ color: '#0f9f9a' }} />
+              <SearchIcon sx={{ color: "#0f9f9a" }} />
             </ListItemIcon>
 
             <ListItemText
@@ -209,7 +227,7 @@ const Navbar = ({ onMenuSelect }) => {
                 <Typography
                   sx={{
                     fontWeight: 600,
-                    fontSize: '0.9rem',
+                    fontSize: "0.9rem",
                   }}
                 >
                   Search Medicines and Vendors
@@ -228,8 +246,8 @@ const Navbar = ({ onMenuSelect }) => {
         position="sticky"
         elevation={0}
         sx={{
-          background: 'linear-gradient(135deg, #ffffff, #e9fffb)',
-          borderBottom: '1px solid #c8f4ec',
+          background: "linear-gradient(135deg, #ffffff, #e9fffb)",
+          borderBottom: "1px solid #c8f4ec",
         }}
       >
         <Toolbar>
@@ -239,7 +257,7 @@ const Navbar = ({ onMenuSelect }) => {
             onClick={toggleDrawer(true)}
             sx={{
               mr: 2,
-              color: '#0f9f9a',
+              color: "#0f9f9a",
             }}
           >
             <MenuIcon />
@@ -251,7 +269,7 @@ const Navbar = ({ onMenuSelect }) => {
             style={{
               width: 105,
               maxHeight: 38,
-              objectFit: 'contain',
+              objectFit: "contain",
               marginRight: 12,
             }}
           />
@@ -262,9 +280,9 @@ const Navbar = ({ onMenuSelect }) => {
             sx={{
               flexGrow: 1,
               fontWeight: 900,
-              color: '#0f9f9a',
-              letterSpacing: '0.04em',
-              fontSize: '0.95rem',
+              color: "#0f9f9a",
+              letterSpacing: "0.04em",
+              fontSize: "0.95rem",
             }}
           >
             EMEDIX GC
@@ -272,8 +290,8 @@ const Navbar = ({ onMenuSelect }) => {
 
           <Box
             sx={{
-              display: 'flex',
-              alignItems: 'center',
+              display: "flex",
+              alignItems: "center",
               gap: 0.4,
             }}
           >
@@ -282,10 +300,10 @@ const Navbar = ({ onMenuSelect }) => {
                 onClick={handleHomeClick}
                 size="small"
                 sx={{
-                  color: '#0f9f9a',
+                  color: "#0f9f9a",
                   p: 0.75,
-                  '&:hover': {
-                    backgroundColor: '#dffaf5',
+                  "&:hover": {
+                    backgroundColor: "#dffaf5",
                   },
                 }}
               >
@@ -297,10 +315,10 @@ const Navbar = ({ onMenuSelect }) => {
               onClick={handleSettingsOpen}
               size="small"
               sx={{
-                color: '#0f9f9a',
+                color: "#0f9f9a",
                 p: 0.75,
-                '&:hover': {
-                  backgroundColor: '#dffaf5',
+                "&:hover": {
+                  backgroundColor: "#dffaf5",
                 },
               }}
             >
@@ -313,20 +331,17 @@ const Navbar = ({ onMenuSelect }) => {
             open={settingsOpen}
             onClose={handleSettingsClose}
             anchorOrigin={{
-              vertical: 'bottom',
-              horizontal: 'right',
+              vertical: "bottom",
+              horizontal: "right",
             }}
             transformOrigin={{
-              vertical: 'top',
-              horizontal: 'right',
+              vertical: "top",
+              horizontal: "right",
             }}
           >
             <MenuItem onClick={handleResetPassword}>
               <ListItemIcon>
-                <LockResetIcon
-                  fontSize="small"
-                  sx={{ color: '#0f9f9a' }}
-                />
+                <LockResetIcon fontSize="small" sx={{ color: "#0f9f9a" }} />
               </ListItemIcon>
 
               <ListItemText primary="Reset Password" />
@@ -334,10 +349,7 @@ const Navbar = ({ onMenuSelect }) => {
 
             <MenuItem onClick={handleLogout}>
               <ListItemIcon>
-                <LogoutIcon
-                  fontSize="small"
-                  sx={{ color: '#e53935' }}
-                />
+                <LogoutIcon fontSize="small" sx={{ color: "#e53935" }} />
               </ListItemIcon>
 
               <ListItemText primary="Logout" />
@@ -346,11 +358,7 @@ const Navbar = ({ onMenuSelect }) => {
         </Toolbar>
       </AppBar>
 
-      <Drawer
-        anchor="left"
-        open={drawerOpen}
-        onClose={toggleDrawer(false)}
-      >
+      <Drawer anchor="left" open={drawerOpen} onClose={toggleDrawer(false)}>
         {drawerContent}
       </Drawer>
     </>

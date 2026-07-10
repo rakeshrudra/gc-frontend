@@ -47,6 +47,7 @@ import {
 
 const statuses = [
   "RECEIVED",
+  "AWAITING_PAYMENT",
   "TO_GM_ROAD",
   "READY_TO_DISPATCH",
   "DISPATCHED",
@@ -61,7 +62,8 @@ const isValidTransition = (currentStatus, newStatus) => {
   }
 
   const allowedTransitions = {
-    RECEIVED: ["TO_GM_ROAD", "UNABLE_TO_FULFILL"],
+    RECEIVED: ["AWAITING_PAYMENT", "UNABLE_TO_FULFILL"],
+    AWAITING_PAYMENT: ["TO_GM_ROAD", "UNABLE_TO_FULFILL"],
     TO_GM_ROAD: ["READY_TO_DISPATCH", "UNABLE_TO_FULFILL"],
     READY_TO_DISPATCH: ["DISPATCHED", "UNABLE_TO_FULFILL"],
 
@@ -82,6 +84,8 @@ const getStatusColor = (status) => {
   switch (status) {
     case "RECEIVED":
       return "#ff9800";
+    case "AWAITING_PAYMENT":
+      return "#fbc02d";
     case "TO_GM_ROAD":
       return "#1976d2";
     case "READY_TO_DISPATCH":
