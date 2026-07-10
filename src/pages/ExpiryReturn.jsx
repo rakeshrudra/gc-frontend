@@ -12,6 +12,7 @@ import {
   TableCell,
   TableContainer,
   TableHead,
+  TablePagination,
   TableRow,
   TextField,
   Typography,
@@ -29,10 +30,10 @@ const columns = [
   { key: 'packing', label: 'Packing' },
   { key: 'company', label: 'Company' },
   { key: 'batchno', label: 'Batch No' },
-  { key: 'invoiceDate', label: 'Invoice Date' },
   { key: 'expiry', label: 'Expiry' },
   { key: 'vendorName', label: 'Vendor Name' },
   { key: 'billNumber', label: 'Bill Number' },
+  { key: 'invoiceDate', label: 'Invoice Date' },
   { key: 'status', label: 'Status' },
 ];
 
@@ -57,6 +58,62 @@ const validExcelTypes = [
   'application/vnd.ms-excel',
 ];
 
+const getUniqueInvoices = (invoices = []) => {
+  const seen = new Set();
+
+  return invoices.filter((invoice) => {
+    const invoiceNumber = String(invoice?.invoiceNumber ?? '').trim();
+
+    if (!invoiceNumber || seen.has(invoiceNumber)) {
+      return false;
+    }
+
+    seen.add(invoiceNumber);
+    return true;
+  });
+};
+
+const getVendorGroups = (row) => {
+  if (Array.isArray(row?.vendors)) {
+    if (row.vendors.length === 0) {
+      return [{ vendorName: '-', invoices: [] }];
+    }
+
+    return row.vendors.map((vendor) => ({
+      vendorName: vendor?.vendorName || '-',
+      invoices: getUniqueInvoices(vendor?.invoices),
+      isFlatFallback: false,
+    }));
+  }
+
+  return [
+    {
+      vendorName: row?.vendorName || '-',
+      invoices:
+        row?.billNumber || row?.invoiceDate
+          ? [{ invoiceNumber: row?.billNumber || '-', invoiceDate: row?.invoiceDate || '-' }]
+          : [],
+      isFlatFallback: true,
+    },
+  ];
+};
+
+const getVendorSearchValue = (row, column) => {
+  if (column === 'vendorName') {
+    return getVendorGroups(row)
+      .map((vendor) => vendor.vendorName)
+      .join(' ');
+  }
+
+  if (column === 'billNumber') {
+    return getVendorGroups(row)
+      .flatMap((vendor) => vendor.invoices.map((invoice) => invoice.invoiceNumber))
+      .join(' ');
+  }
+
+  return row[column];
+};
+
 const ExpiryReturn = () => {
   const fileInputRef = useRef(null);
   const [selectedFile, setSelectedFile] = useState(null);
@@ -66,6 +123,8 @@ const ExpiryReturn = () => {
   const [result, setResult] = useState(null);
   const [searchInput, setSearchInput] = useState('');
   const [filterTerm, setFilterTerm] = useState('');
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(50);
 
   const validateAndSet = (file) => {
     setError('');
@@ -124,6 +183,7 @@ const ExpiryReturn = () => {
       setResult(data);
       setSearchInput('');
       setFilterTerm('');
+      setPage(0);
     } catch (err) {
       setError(err.response?.data?.message || 'Upload failed. Please try again.');
     } finally {
@@ -136,15 +196,26 @@ const ExpiryReturn = () => {
 
     if (!normalizedInput) {
       setFilterTerm('');
+      setPage(0);
       return undefined;
     }
 
     const debounceTimer = setTimeout(() => {
       setFilterTerm(normalizedInput);
+      setPage(0);
     }, 300);
 
     return () => clearTimeout(debounceTimer);
   }, [searchInput]);
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
 
   const rows = Array.isArray(result?.data) ? result.data : [];
   const filteredRows = useMemo(() => {
@@ -154,18 +225,90 @@ const ExpiryReturn = () => {
 
     return rows.filter((row) =>
       searchableColumns.some((column) =>
-        String(row[column] ?? '').toLowerCase().includes(filterTerm),
+        String(getVendorSearchValue(row, column) ?? '')
+          .toLowerCase()
+          .includes(filterTerm),
       ),
     );
   }, [filterTerm, rows]);
+  const paginatedRows = useMemo(
+    () => filteredRows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage),
+    [filteredRows, page, rowsPerPage],
+  );
+
+  const renderVendorCell = (row) => (
+    <Box>
+      {getVendorGroups(row).map((vendor, index) => (
+        <Box key={`${vendor.vendorName}-${index}`}>{vendor.vendorName}</Box>
+      ))}
+    </Box>
+  );
+
+  const renderBillNumberCell = (row) => (
+    <Box>
+      {getVendorGroups(row).map((vendor, index) => {
+        const billNumbers = vendor.invoices.map((invoice) => invoice.invoiceNumber);
+
+        return (
+          <Box key={`${vendor.vendorName}-${index}`}>
+            {billNumbers.length > 0 ? billNumbers.join(', ') : '-'}
+          </Box>
+        );
+      })}
+    </Box>
+  );
+
+  const renderInvoiceDateCell = (row) => (
+    <Box>
+      {getVendorGroups(row).map((vendor, vendorIndex) => {
+        if (vendor.isFlatFallback) {
+          return (
+            <Box key={`${vendor.vendorName}-${vendorIndex}`}>
+              {vendor.invoices[0]?.invoiceDate || '-'}
+            </Box>
+          );
+        }
+
+        if (vendor.invoices.length === 0) {
+          return <Box key={`${vendor.vendorName}-${vendorIndex}`}>-</Box>;
+        }
+
+        return (
+          <Box key={`${vendor.vendorName}-${vendorIndex}`}>
+            {vendor.invoices.map((invoice, invoiceIndex) => (
+              <Box key={`${invoice.invoiceNumber}-${invoiceIndex}`}>
+                {invoice.invoiceNumber} — {invoice.invoiceDate || '-'}
+              </Box>
+            ))}
+          </Box>
+        );
+      })}
+    </Box>
+  );
+
+  const renderCellValue = (row, column) => {
+    if (column.key === 'vendorName') {
+      return renderVendorCell(row);
+    }
+
+    if (column.key === 'billNumber') {
+      return renderBillNumberCell(row);
+    }
+
+    if (column.key === 'invoiceDate') {
+      return renderInvoiceDateCell(row);
+    }
+
+    return row[column.key] ?? '';
+  };
 
   return (
-    <Box>
+    <Box sx={{ width: '100%', maxWidth: '100%', overflowX: 'hidden' }}>
       <Paper
         elevation={0}
         sx={{
-          p: 1.5,
-          mb: 2,
+          p: { xs: 1, sm: 1.5 },
+          mb: { xs: 1.5, sm: 2 },
           borderRadius: '12px',
           border: '1px solid #d9f7ef',
           background: 'rgba(255,255,255,0.95)',
@@ -188,7 +331,7 @@ const ExpiryReturn = () => {
             border: '2px dashed',
             borderColor: dragActive ? '#2bb3b1' : '#cbd5e1',
             borderRadius: '10px',
-            p: 1.5,
+            p: { xs: 1.25, sm: 1.5 },
             textAlign: 'center',
             cursor: 'pointer',
             backgroundColor: dragActive
@@ -216,9 +359,20 @@ const ExpiryReturn = () => {
         />
 
         {selectedFile && (
-          <Box sx={{ mt: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-            <InsertDriveFileIcon sx={{ color: '#2bb3b1' }} />
-            <Typography sx={{ flexGrow: 1 }}>{selectedFile.name}</Typography>
+          <Box
+            sx={{
+              mt: 2,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              flexWrap: 'wrap',
+              minWidth: 0,
+            }}
+          >
+            <InsertDriveFileIcon sx={{ color: '#2bb3b1', flexShrink: 0 }} />
+            <Typography sx={{ flexGrow: 1, minWidth: 0, overflowWrap: 'anywhere' }}>
+              {selectedFile.name}
+            </Typography>
             <Chip label={`${(selectedFile.size / 1024).toFixed(1)} KB`} size="small" />
           </Box>
         )}
@@ -256,7 +410,8 @@ const ExpiryReturn = () => {
                 sm: 'repeat(3, minmax(0, 1fr))',
               },
               gap: 1.5,
-              mb: 2,
+              mb: { xs: 1.5, sm: 2 },
+              minWidth: 0,
             }}
           >
             {summaryItems.map((item) => (
@@ -264,7 +419,7 @@ const ExpiryReturn = () => {
                 key={item.key}
                 elevation={0}
                 sx={{
-                  p: 1.5,
+                  p: { xs: 1.25, sm: 1.5 },
                   borderRadius: '10px',
                   border: '1px solid #d9f7ef',
                   background: '#ffffff',
@@ -287,18 +442,20 @@ const ExpiryReturn = () => {
             onChange={(event) => setSearchInput(event.target.value)}
             placeholder="Search uploaded results"
             sx={{
-              mb: 2,
+              mb: { xs: 1.5, sm: 2 },
               background: '#ffffff',
               '& .MuiOutlinedInput-root': {
                 borderRadius: '10px',
               },
             }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon sx={{ color: '#2bb3b1' }} />
-                </InputAdornment>
-              ),
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon sx={{ color: '#2bb3b1' }} />
+                  </InputAdornment>
+                ),
+              },
             }}
           />
 
@@ -309,36 +466,96 @@ const ExpiryReturn = () => {
               borderRadius: '12px',
               border: '1px solid #d9f7ef',
               overflowX: 'auto',
+              maxWidth: '100%',
             }}
           >
-            <Table size="small">
+            <Table size="small" sx={{ minWidth: { xs: 980, md: 1100 } }}>
               <TableHead>
                 <TableRow>
                   {columns.map((column) => (
-                    <TableCell key={column.key}>{column.label}</TableCell>
+                    <TableCell
+                      key={column.key}
+                      sx={{
+                        px: { xs: 1, sm: 1.5 },
+                        py: { xs: 0.75, sm: 1 },
+                        fontSize: { xs: '0.78rem', sm: '0.875rem' },
+                        whiteSpace: 'normal',
+                      }}
+                    >
+                      {column.label}
+                    </TableCell>
                   ))}
                 </TableRow>
               </TableHead>
               <TableBody>
-                {filteredRows.length > 0 ? (
-                  filteredRows.map((row, index) => (
-                    <TableRow key={`${row.batchno || 'row'}-${index}`}>
+                {paginatedRows.length > 0 ? (
+                  paginatedRows.map((row, index) => (
+                    <TableRow key={`${row.batchno || 'row'}-${page * rowsPerPage + index}`}>
                       {columns.map((column) => (
-                        <TableCell key={column.key}>
-                          {row[column.key] ?? ''}
+                        <TableCell
+                          key={column.key}
+                          sx={{
+                            px: { xs: 1, sm: 1.5 },
+                            py: { xs: 0.75, sm: 1 },
+                            fontSize: { xs: '0.78rem', sm: '0.875rem' },
+                            maxWidth: { xs: 180, sm: 240, md: 300 },
+                            overflowWrap: 'anywhere',
+                            whiteSpace: 'normal',
+                            verticalAlign: 'top',
+                          }}
+                        >
+                          {renderCellValue(row, column)}
                         </TableCell>
                       ))}
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={columns.length} align="center">
+                    <TableCell
+                      colSpan={columns.length}
+                      align="center"
+                      sx={{
+                        px: { xs: 1, sm: 1.5 },
+                        py: { xs: 1.5, sm: 2 },
+                        fontSize: { xs: '0.78rem', sm: '0.875rem' },
+                      }}
+                    >
                       {rows.length > 0 ? 'No matching records found.' : 'No records found.'}
                     </TableCell>
                   </TableRow>
                 )}
               </TableBody>
             </Table>
+            <TablePagination
+              component="div"
+              count={filteredRows.length}
+              page={page}
+              rowsPerPage={rowsPerPage}
+              rowsPerPageOptions={[25, 50, 100]}
+              onPageChange={handleChangePage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+              sx={{
+                borderTop: '1px solid #d9f7ef',
+                '& .MuiTablePagination-toolbar': {
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: { xs: 0.5, sm: 1 },
+                  justifyContent: 'center',
+                  minHeight: { xs: 52, sm: 52 },
+                  px: { xs: 1, sm: 2 },
+                  '@media (min-width:600px)': {
+                    justifyContent: 'flex-end',
+                  },
+                },
+                '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
+                  fontSize: { xs: '0.78rem', sm: '0.875rem' },
+                  m: 0,
+                },
+                '& .MuiTablePagination-actions': {
+                  ml: { xs: 0, sm: 2 },
+                },
+              }}
+            />
           </TableContainer>
         </>
       )}
