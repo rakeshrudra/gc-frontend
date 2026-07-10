@@ -1,22 +1,24 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   Box,
   Button,
   Chip,
   Collapse,
+  InputAdornment,
   Paper,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
-  TablePagination,
   TableRow,
+  TextField,
   Typography,
 } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
+import SearchIcon from '@mui/icons-material/Search';
 import { LifeLine } from 'react-loading-indicators';
 
 import { uploadExpiryReturn } from '../services/expiryReturn';
@@ -27,6 +29,7 @@ const columns = [
   { key: 'packing', label: 'Packing' },
   { key: 'company', label: 'Company' },
   { key: 'batchno', label: 'Batch No' },
+  { key: 'invoiceDate', label: 'Invoice Date' },
   { key: 'expiry', label: 'Expiry' },
   { key: 'vendorName', label: 'Vendor Name' },
   { key: 'billNumber', label: 'Bill Number' },
@@ -37,6 +40,16 @@ const summaryItems = [
   { key: 'totalRows', label: 'Total Rows' },
   { key: 'foundRows', label: 'Found' },
   { key: 'notFoundRows', label: 'Not Found' },
+];
+
+const searchableColumns = [
+  'hsncode',
+  'particulars',
+  'company',
+  'batchno',
+  'vendorName',
+  'billNumber',
+  'status',
 ];
 
 const validExcelTypes = [
@@ -51,8 +64,8 @@ const ExpiryReturn = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState(null);
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(50);
+  const [searchInput, setSearchInput] = useState('');
+  const [filterTerm, setFilterTerm] = useState('');
 
   const validateAndSet = (file) => {
     setError('');
@@ -109,7 +122,8 @@ const ExpiryReturn = () => {
     try {
       const data = await uploadExpiryReturn(selectedFile);
       setResult(data);
-      setPage(0);
+      setSearchInput('');
+      setFilterTerm('');
     } catch (err) {
       setError(err.response?.data?.message || 'Upload failed. Please try again.');
     } finally {
@@ -117,20 +131,33 @@ const ExpiryReturn = () => {
     }
   };
 
-  const handleChangePage = (event, newPage) => {
-    setPage(newPage);
-  };
+  useEffect(() => {
+    const normalizedInput = searchInput.trim().toLowerCase();
 
-  const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
-  };
+    if (!normalizedInput) {
+      setFilterTerm('');
+      return undefined;
+    }
+
+    const debounceTimer = setTimeout(() => {
+      setFilterTerm(normalizedInput);
+    }, 300);
+
+    return () => clearTimeout(debounceTimer);
+  }, [searchInput]);
 
   const rows = Array.isArray(result?.data) ? result.data : [];
-  const paginatedRows = rows.slice(
-    page * rowsPerPage,
-    page * rowsPerPage + rowsPerPage,
-  );
+  const filteredRows = useMemo(() => {
+    if (!filterTerm) {
+      return rows;
+    }
+
+    return rows.filter((row) =>
+      searchableColumns.some((column) =>
+        String(row[column] ?? '').toLowerCase().includes(filterTerm),
+      ),
+    );
+  }, [filterTerm, rows]);
 
   return (
     <Box>
@@ -253,6 +280,28 @@ const ExpiryReturn = () => {
             ))}
           </Box>
 
+          <TextField
+            fullWidth
+            size="small"
+            value={searchInput}
+            onChange={(event) => setSearchInput(event.target.value)}
+            placeholder="Search uploaded results"
+            sx={{
+              mb: 2,
+              background: '#ffffff',
+              '& .MuiOutlinedInput-root': {
+                borderRadius: '10px',
+              },
+            }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon sx={{ color: '#2bb3b1' }} />
+                </InputAdornment>
+              ),
+            }}
+          />
+
           <TableContainer
             component={Paper}
             elevation={0}
@@ -271,38 +320,25 @@ const ExpiryReturn = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {rows.length > 0 ? (
-                  paginatedRows.map((row, index) => {
-                    const rowIndex = page * rowsPerPage + index;
-
-                    return (
-                      <TableRow key={`${row.batchno || 'row'}-${rowIndex}`}>
-                        {columns.map((column) => (
-                          <TableCell key={column.key}>
-                            {row[column.key] ?? ''}
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    );
-                  })
+                {filteredRows.length > 0 ? (
+                  filteredRows.map((row, index) => (
+                    <TableRow key={`${row.batchno || 'row'}-${index}`}>
+                      {columns.map((column) => (
+                        <TableCell key={column.key}>
+                          {row[column.key] ?? ''}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))
                 ) : (
                   <TableRow>
                     <TableCell colSpan={columns.length} align="center">
-                      No records found.
+                      {rows.length > 0 ? 'No matching records found.' : 'No records found.'}
                     </TableCell>
                   </TableRow>
                 )}
               </TableBody>
             </Table>
-            <TablePagination
-              component="div"
-              count={rows.length}
-              page={page}
-              rowsPerPage={rowsPerPage}
-              rowsPerPageOptions={[25, 50, 100]}
-              onPageChange={handleChangePage}
-              onRowsPerPageChange={handleChangeRowsPerPage}
-            />
           </TableContainer>
         </>
       )}
