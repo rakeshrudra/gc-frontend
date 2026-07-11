@@ -12,7 +12,6 @@ import {
   TableCell,
   TableContainer,
   TableHead,
-  TablePagination,
   TableRow,
   TextField,
   Typography,
@@ -123,8 +122,6 @@ const ExpiryReturn = () => {
   const [result, setResult] = useState(null);
   const [searchInput, setSearchInput] = useState('');
   const [filterTerm, setFilterTerm] = useState('');
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(50);
 
   const validateAndSet = (file) => {
     setError('');
@@ -183,7 +180,6 @@ const ExpiryReturn = () => {
       setResult(data);
       setSearchInput('');
       setFilterTerm('');
-      setPage(0);
     } catch (err) {
       setError(err.response?.data?.message || 'Upload failed. Please try again.');
     } finally {
@@ -196,26 +192,15 @@ const ExpiryReturn = () => {
 
     if (!normalizedInput) {
       setFilterTerm('');
-      setPage(0);
       return undefined;
     }
 
     const debounceTimer = setTimeout(() => {
       setFilterTerm(normalizedInput);
-      setPage(0);
     }, 300);
 
     return () => clearTimeout(debounceTimer);
   }, [searchInput]);
-
-  const handleChangePage = (event, newPage) => {
-    setPage(newPage);
-  };
-
-  const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
-  };
 
   const rows = Array.isArray(result?.data) ? result.data : [];
   const filteredRows = useMemo(() => {
@@ -231,10 +216,6 @@ const ExpiryReturn = () => {
       ),
     );
   }, [filterTerm, rows]);
-  const paginatedRows = useMemo(
-    () => filteredRows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage),
-    [filteredRows, page, rowsPerPage],
-  );
 
   const renderVendorCell = (row) => (
     <Box>
@@ -488,9 +469,9 @@ const ExpiryReturn = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {paginatedRows.length > 0 ? (
-                  paginatedRows.map((row, index) => (
-                    <TableRow key={`${row.batchno || 'row'}-${page * rowsPerPage + index}`}>
+                {filteredRows.length > 0 ? (
+                  filteredRows.map((row, index) => (
+                    <TableRow key={`${row.batchno || 'row'}-${index}`}>
                       {columns.map((column) => (
                         <TableCell
                           key={column.key}
@@ -526,36 +507,6 @@ const ExpiryReturn = () => {
                 )}
               </TableBody>
             </Table>
-            <TablePagination
-              component="div"
-              count={filteredRows.length}
-              page={page}
-              rowsPerPage={rowsPerPage}
-              rowsPerPageOptions={[25, 50, 100]}
-              onPageChange={handleChangePage}
-              onRowsPerPageChange={handleChangeRowsPerPage}
-              sx={{
-                borderTop: '1px solid #d9f7ef',
-                '& .MuiTablePagination-toolbar': {
-                  alignItems: 'center',
-                  flexWrap: 'wrap',
-                  gap: { xs: 0.5, sm: 1 },
-                  justifyContent: 'center',
-                  minHeight: { xs: 52, sm: 52 },
-                  px: { xs: 1, sm: 2 },
-                  '@media (min-width:600px)': {
-                    justifyContent: 'flex-end',
-                  },
-                },
-                '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
-                  fontSize: { xs: '0.78rem', sm: '0.875rem' },
-                  m: 0,
-                },
-                '& .MuiTablePagination-actions': {
-                  ml: { xs: 0, sm: 2 },
-                },
-              }}
-            />
           </TableContainer>
         </>
       )}
