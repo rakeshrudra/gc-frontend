@@ -29,6 +29,7 @@ const columns = [
   { key: 'packing', label: 'Packing' },
   { key: 'company', label: 'Company' },
   { key: 'batchno', label: 'Batch No' },
+  { key: 'matchedBatchNo', label: 'Matched Batch No' },
   { key: 'expiry', label: 'Expiry' },
   { key: 'vendorName', label: 'Vendor Name' },
   { key: 'billNumber', label: 'Bill Number' },
@@ -278,6 +279,10 @@ const ExpiryReturn = () => {
 
     if (column.key === 'invoiceDate') {
       return renderInvoiceDateCell(row);
+    }
+
+    if (column.key === 'matchedBatchNo') {
+      return row.matchedBatchNo || '-';
     }
 
     return row[column.key] ?? '';
