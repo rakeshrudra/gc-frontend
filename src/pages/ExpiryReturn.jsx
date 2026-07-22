@@ -20,6 +20,7 @@ import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import SearchIcon from '@mui/icons-material/Search';
 import { LifeLine } from 'react-loading-indicators';
+import * as XLSX from 'xlsx-js-style';
 
 import { uploadExpiryReturn } from '../services/expiryReturn';
 
@@ -112,6 +113,44 @@ const getVendorSearchValue = (row, column) => {
   }
 
   return row[column];
+};
+
+const getExportCellValue = (row, column) => {
+  if (column.key === 'vendorName') {
+    return getVendorGroups(row)
+      .map((vendor) => vendor.vendorName)
+      .join(', ');
+  }
+
+  if (column.key === 'billNumber') {
+    return getVendorGroups(row)
+      .flatMap((vendor) => vendor.invoices.map((invoice) => invoice.invoiceNumber))
+      .join(', ');
+  }
+
+  if (column.key === 'invoiceDate') {
+    return getVendorGroups(row)
+      .flatMap((vendor) => {
+        if (vendor.isFlatFallback) {
+          return [vendor.invoices[0]?.invoiceDate || '-'];
+        }
+
+        if (vendor.invoices.length === 0) {
+          return ['-'];
+        }
+
+        return vendor.invoices.map(
+          (invoice) => `${invoice.invoiceNumber} - ${invoice.invoiceDate || '-'}`,
+        );
+      })
+      .join(', ');
+  }
+
+  if (column.key === 'matchedBatchNo') {
+    return row.matchedBatchNo || '-';
+  }
+
+  return row[column.key] ?? '';
 };
 
 const ExpiryReturn = () => {
@@ -217,6 +256,44 @@ const ExpiryReturn = () => {
       ),
     );
   }, [filterTerm, rows]);
+
+  const exportToExcel = () => {
+    const worksheetData = [
+      columns.map((column) => column.label),
+      ...rows.map((row) => columns.map((column) => getExportCellValue(row, column))),
+    ];
+
+    const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+
+    worksheet['!cols'] = columns.map((column) => ({
+      wch:
+        column.key === 'particulars'
+          ? 32
+          : ['vendorName', 'billNumber', 'invoiceDate'].includes(column.key)
+            ? 28
+            : 16,
+    }));
+
+    const headerStyle = {
+      font: { bold: true },
+      alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+      fill: {
+        patternType: 'solid',
+        fgColor: { rgb: 'FFD9E1F2' },
+      },
+    };
+
+    columns.forEach((_, index) => {
+      const ref = XLSX.utils.encode_cell({ r: 0, c: index });
+      if (worksheet[ref]) {
+        worksheet[ref].s = headerStyle;
+      }
+    });
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Expiry Return');
+    XLSX.writeFile(workbook, 'expiry-return-results.xlsx');
+  };
 
   const renderVendorCell = (row) => (
     <Box>
@@ -444,6 +521,22 @@ const ExpiryReturn = () => {
               },
             }}
           />
+
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1.5 }}>
+            <Button
+              variant="contained"
+              size="small"
+              onClick={exportToExcel}
+              disabled={rows.length === 0}
+              sx={{
+                backgroundColor: '#2e7d32',
+                textTransform: 'none',
+                fontWeight: 700,
+              }}
+            >
+              Export Excel
+            </Button>
+          </Box>
 
           <TableContainer
             component={Paper}
