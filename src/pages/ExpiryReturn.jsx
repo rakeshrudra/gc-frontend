@@ -30,11 +30,12 @@ const columns = [
   { key: 'packing', label: 'Packing' },
   { key: 'company', label: 'Company' },
   { key: 'batchno', label: 'Batch No' },
-  { key: 'matchedBatchNo', label: 'Matched Batch No' },
   { key: 'expiry', label: 'Expiry' },
+  { key: 'qty', label: 'Qty.' },
   { key: 'vendorName', label: 'Vendor Name' },
   { key: 'billNumber', label: 'Bill Number' },
   { key: 'invoiceDate', label: 'Invoice Date' },
+  { key: 'matchedBatchNo', label: 'Matched Batch No' },
   { key: 'status', label: 'Status' },
 ];
 
