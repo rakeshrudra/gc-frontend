@@ -8,11 +8,11 @@ import {
   CssBaseline,
 } from '@mui/material';
 
-import Login from './pages/login';
+import { AuthProvider } from './context/AuthContext';
+import { ProtectedRoute } from './components/ProtectedRoute';
 import Dashboard from './pages/dashboard';
 import Home from './pages/Home';
 import MedicineVendorSearch from './pages/MedicineVendorSearch';
-import ResetPasswordPage from './pages/ResetPasswordPage';
 import Navbar from './components/Navbar';
 import ProcessedOrders from './pages/ProcessedOrders';
 import DispatchLabels from './pages/DispatchLabels';
@@ -107,20 +107,14 @@ const theme = createTheme({
   },
 });
 
-// Simple auth guard
-const ProtectedRoute = ({ children }) => {
-  const token = sessionStorage.getItem('token');
-
-  return token ? children : <Navigate to="/" replace />;
-};
-
 function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
 
-      <Routes>
-        <Route path="/" element={<Login />} />
+      <AuthProvider>
+        <Routes>
+        <Route path="/" element={<Navigate to="/home" replace />} />
 
         <Route
           path="/home"
@@ -215,15 +209,11 @@ function App() {
         />
 
         <Route
-          path="/reset-password"
-          element={<ResetPasswordPage />}
-        />
-
-        <Route
           path="*"
-          element={<Navigate to="/" replace />}
+          element={<Navigate to="/home" replace />}
         />
-      </Routes>
+        </Routes>
+      </AuthProvider>
     </ThemeProvider>
   );
 }

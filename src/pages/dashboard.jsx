@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Box, Container, Typography, Paper, Button, Stack, Chip } from '@mui/material';
-import axios from 'axios';
+import api from '../services/api';
 
 import Navbar from '../components/Navbar';
 import Upload from '../components/Upload';
@@ -73,11 +73,6 @@ const Dashboard = () => {
   const [vendorwiseResults, setVendorwiseResults] = useState([]);
   const [showProcessCard, setShowProcessCard] = useState(false);
 
-  useEffect(() => {
-    const token = sessionStorage.getItem('token');
-    if (!token) navigate('/', { replace: true });
-  }, [navigate]);
-
   const handleUploadSuccess = (data) => {
     setResults(data.results || []);
     setDocHeader(data.documentHeader || null);
@@ -96,7 +91,6 @@ const Dashboard = () => {
     return amount === null ? sum : sum + amount;
   }, 0);
 
-  // ✅ FIXED FUNCTION WITH TOKEN
   const handleVendorwiseToggle = async () => {
     if (showVendorwise) {
       setShowVendorwise(false);
@@ -104,17 +98,7 @@ const Dashboard = () => {
     }
 
     try {
-      const token = sessionStorage.getItem('token');
-
-      const res = await axios.post(
-        `${import.meta.env.VITE_API_URL}/match/vendorwise`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const res = await api.post('/match/vendorwise', {});
 
       setVendorwiseResults(res.data.vendorwiseResults || []);
       setShowVendorwise(true);
@@ -319,19 +303,19 @@ const Dashboard = () => {
                     </Box>
                   </Paper>
 
-         {showProcessCard && !showVendorwise && (
-          <ProcessOrderCard
-            docHeader={docHeader}
-            totalRows={results.length}
-            totalAmount={formatAmount(totalUploadAmount)}
-            items={results}
-            onClose={() => setShowProcessCard(false)}
-            onSuccess={() => {
-              setShowProcessCard(false);
-              navigate('/processed-orders');
-            }}
-          />
-        )}
+                  {showProcessCard && !showVendorwise && (
+                    <ProcessOrderCard
+                      docHeader={docHeader}
+                      totalRows={results.length}
+                      totalAmount={formatAmount(totalUploadAmount)}
+                      items={results}
+                      onClose={() => setShowProcessCard(false)}
+                      onSuccess={() => {
+                        setShowProcessCard(false);
+                        navigate('/processed-orders');
+                      }}
+                    />
+                  )}
 
                   {showVendorwise ? (
                     <VendorSearch
