@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import AssignmentReturnIcon from "@mui/icons-material/AssignmentReturn";
 import {
@@ -25,14 +25,15 @@ import HomeOutlinedIcon from "@mui/icons-material/HomeOutlined";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutlined";
 import SearchIcon from "@mui/icons-material/Search";
 import SettingsIcon from "@mui/icons-material/Settings";
-import LockResetIcon from "@mui/icons-material/LockReset";
 import TableChartIcon from "@mui/icons-material/TableChart";
 
 import logo from "../assets/eops-logo.png";
+import { AuthContext } from "../context/AuthContext";
 
 const Navbar = ({ onMenuSelect }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { logout } = useContext(AuthContext);
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [settingsAnchorEl, setSettingsAnchorEl] = useState(null);
@@ -41,9 +42,8 @@ const Navbar = ({ onMenuSelect }) => {
   const settingsOpen = Boolean(settingsAnchorEl);
 
   const handleLogout = () => {
-    sessionStorage.clear();
-    localStorage.clear();
-    window.location.replace("/");
+    handleSettingsClose();
+    logout();
   };
 
   const handleSettingsOpen = (event) => {
@@ -52,11 +52,6 @@ const Navbar = ({ onMenuSelect }) => {
 
   const handleSettingsClose = () => {
     setSettingsAnchorEl(null);
-  };
-
-  const handleResetPassword = () => {
-    handleSettingsClose();
-    navigate("/reset-password");
   };
 
   const toggleDrawer = (open) => (event) => {
@@ -339,14 +334,6 @@ const Navbar = ({ onMenuSelect }) => {
               horizontal: "right",
             }}
           >
-            <MenuItem onClick={handleResetPassword}>
-              <ListItemIcon>
-                <LockResetIcon fontSize="small" sx={{ color: "#0f9f9a" }} />
-              </ListItemIcon>
-
-              <ListItemText primary="Reset Password" />
-            </MenuItem>
-
             <MenuItem onClick={handleLogout}>
               <ListItemIcon>
                 <LogoutIcon fontSize="small" sx={{ color: "#e53935" }} />

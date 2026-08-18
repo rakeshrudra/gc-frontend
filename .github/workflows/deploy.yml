@@ -27,4 +27,4 @@ jobs:
             npm install
             npm run build
 
-            pm2 restart gc-Frontend
+            pm2 restart gc-frontend
