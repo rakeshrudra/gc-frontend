@@ -954,8 +954,8 @@ const ProcessedOrders = () => {
                 fullWidth
               >
                 {admins.map((admin) => (
-                  <MenuItem key={admin.id} value={admin.name}>
-                    {admin.name}
+                  <MenuItem key={admin.id} value={admin.username}>
+                    {admin.username}
                   </MenuItem>
                 ))}
               </TextField>

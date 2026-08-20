@@ -2,9 +2,10 @@ import { useContext, useEffect } from 'react';
 import { Box } from '@mui/material';
 import { AuthContext } from '../context/AuthContext';
 import { redirectToVitalityLogin } from '../services/authApi';
+import NotProvisioned from '../pages/NotProvisioned';
 
 export function ProtectedRoute({ children }) {
-  const { isAuthenticated, isLoading } = useContext(AuthContext);
+  const { isAuthenticated, isProvisioned, isLoading } = useContext(AuthContext);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -12,7 +13,7 @@ export function ProtectedRoute({ children }) {
     }
   }, [isLoading, isAuthenticated]);
 
-  if (!isAuthenticated) {
+  if (isLoading || !isAuthenticated) {
     return (
       <Box
         sx={{
@@ -26,6 +27,10 @@ export function ProtectedRoute({ children }) {
         Loading…
       </Box>
     );
+  }
+
+  if (!isProvisioned) {
+    return <NotProvisioned />;
   }
 
   return children;
