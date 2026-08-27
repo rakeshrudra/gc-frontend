@@ -33,7 +33,8 @@ import { AuthContext } from "../context/AuthContext";
 const Navbar = ({ onMenuSelect }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { logout } = useContext(AuthContext);
+  const { logout, role } = useContext(AuthContext);
+  const isStoreRole = role === "store";
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [settingsAnchorEl, setSettingsAnchorEl] = useState(null);
@@ -139,28 +140,30 @@ const Navbar = ({ onMenuSelect }) => {
         </ListItem>
 
         {/* YES MAYBE REPORT */}
-        <ListItem disablePadding>
-          <ListItemButton
-            onClick={() => handleMenuClick("/dashboard", "match")}
-          >
-            <ListItemIcon>
-              <CheckCircleOutlineIcon sx={{ color: "#16a085" }} />
-            </ListItemIcon>
+        {!isStoreRole && (
+          <ListItem disablePadding>
+            <ListItemButton
+              onClick={() => handleMenuClick("/dashboard", "match")}
+            >
+              <ListItemIcon>
+                <CheckCircleOutlineIcon sx={{ color: "#16a085" }} />
+              </ListItemIcon>
 
-            <ListItemText
-              primary={
-                <Typography
-                  sx={{
-                    fontWeight: 600,
-                    fontSize: "0.9rem",
-                  }}
-                >
-                  YES/MAYBE Report
-                </Typography>
-              }
-            />
-          </ListItemButton>
-        </ListItem>
+              <ListItemText
+                primary={
+                  <Typography
+                    sx={{
+                      fontWeight: 600,
+                      fontSize: "0.9rem",
+                    }}
+                  >
+                    YES/MAYBE Report
+                  </Typography>
+                }
+              />
+            </ListItemButton>
+          </ListItem>
+        )}
 
         {/* PROCESSED ORDERS */}
         <ListItem disablePadding>
@@ -185,52 +188,56 @@ const Navbar = ({ onMenuSelect }) => {
         </ListItem>
 
         {/* EXPIRY RETURN */}
-        <ListItem disablePadding>
-          <ListItemButton onClick={() => handleMenuClick("/expiry-return")}>
-            <ListItemIcon>
-              <AssignmentReturnIcon sx={{ color: "#0f9f9a" }} />
-            </ListItemIcon>
+        {!isStoreRole && (
+          <ListItem disablePadding>
+            <ListItemButton onClick={() => handleMenuClick("/expiry-return")}>
+              <ListItemIcon>
+                <AssignmentReturnIcon sx={{ color: "#0f9f9a" }} />
+              </ListItemIcon>
 
-            <ListItemText
-              primary={
-                <Typography
-                  sx={{
-                    fontWeight: 600,
-                    fontSize: "0.9rem",
-                  }}
-                >
-                  Expiry Return
-                </Typography>
-              }
-            />
-          </ListItemButton>
-        </ListItem>
+              <ListItemText
+                primary={
+                  <Typography
+                    sx={{
+                      fontWeight: 600,
+                      fontSize: "0.9rem",
+                    }}
+                  >
+                    Expiry Return
+                  </Typography>
+                }
+              />
+            </ListItemButton>
+          </ListItem>
+        )}
 
         {/* SEARCH */}
-        <ListItem disablePadding>
-          <ListItemButton
-            onClick={() =>
-              handleMenuClick("/medicine-vendor-search", "searchMaster")
-            }
-          >
-            <ListItemIcon>
-              <SearchIcon sx={{ color: "#0f9f9a" }} />
-            </ListItemIcon>
-
-            <ListItemText
-              primary={
-                <Typography
-                  sx={{
-                    fontWeight: 600,
-                    fontSize: "0.9rem",
-                  }}
-                >
-                  Search Medicines and Vendors
-                </Typography>
+        {!isStoreRole && (
+          <ListItem disablePadding>
+            <ListItemButton
+              onClick={() =>
+                handleMenuClick("/medicine-vendor-search", "searchMaster")
               }
-            />
-          </ListItemButton>
-        </ListItem>
+            >
+              <ListItemIcon>
+                <SearchIcon sx={{ color: "#0f9f9a" }} />
+              </ListItemIcon>
+
+              <ListItemText
+                primary={
+                  <Typography
+                    sx={{
+                      fontWeight: 600,
+                      fontSize: "0.9rem",
+                    }}
+                  >
+                    Search Medicines and Vendors
+                  </Typography>
+                }
+              />
+            </ListItemButton>
+          </ListItem>
+        )}
       </List>
     </Box>
   );

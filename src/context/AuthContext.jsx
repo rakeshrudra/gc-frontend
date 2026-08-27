@@ -6,31 +6,59 @@ export const AuthContext = createContext(undefined);
 
 export function AuthProvider({ children }) {
   const [admin, setAdmin] = useState(null);
+  const [storeUser, setStoreUser] = useState(null);
+  const [role, setRole] = useState(null); // 'admin' | 'store' | null
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isProvisioned, setIsProvisioned] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    api
-      .get('/admins/me')
-      .then((response) => {
-        setAdmin(response.data);
+    async function resolveAsStore() {
+      try {
+        const userResponse = await api.get('/users/me');
+        setStoreUser(userResponse.data);
+        setRole('store');
         setIsAuthenticated(true);
         setIsProvisioned(true);
-      })
-      .catch((error) => {
-        setAdmin(null);
+      } catch {
+        setIsAuthenticated(true);
+        setIsProvisioned(false);
+      }
+    }
+
+    async function resolveAsAdmin() {
+      try {
+        const response = await api.get('/admins/me');
+        setAdmin(response.data);
+        setRole('admin');
+        setIsAuthenticated(true);
+        setIsProvisioned(true);
+        return;
+      } catch (error) {
         const status = error?.response?.status;
         const message = error?.response?.data?.message;
+
         if (status === 401 && message === 'Admin is not provisioned') {
-          setIsAuthenticated(true);
-          setIsProvisioned(false);
-        } else {
-          setIsAuthenticated(false);
-          setIsProvisioned(true);
+          await resolveAsStore();
+          return;
         }
-      })
-      .finally(() => setIsLoading(false));
+
+        setIsAuthenticated(false);
+        setIsProvisioned(true);
+      }
+    }
+
+    async function resolveSession() {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('session') === 'store') {
+        await resolveAsStore();
+        return;
+      }
+
+      await resolveAsAdmin();
+    }
+
+    resolveSession().finally(() => setIsLoading(false));
   }, []);
 
   const logout = useCallback(async () => {
@@ -38,6 +66,8 @@ export function AuthProvider({ children }) {
       await logoutSession();
     } finally {
       setAdmin(null);
+      setStoreUser(null);
+      setRole(null);
       setIsAuthenticated(false);
       redirectToVitalityLogin();
     }
@@ -46,12 +76,14 @@ export function AuthProvider({ children }) {
   const value = useMemo(
     () => ({
       admin,
+      storeUser,
+      role,
       isAuthenticated,
       isProvisioned,
       isLoading,
       logout,
     }),
-    [admin, isAuthenticated, isProvisioned, isLoading, logout]
+    [admin, storeUser, role, isAuthenticated, isProvisioned, isLoading, logout]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
