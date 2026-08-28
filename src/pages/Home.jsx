@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -11,9 +11,94 @@ import {
 } from '@mui/material';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import SearchIcon from '@mui/icons-material/Search';
+import TableChartIcon from '@mui/icons-material/TableChart';
+import { AuthContext } from '../context/AuthContext';
 
 const Home = () => {
   const navigate = useNavigate();
+  const { role } = useContext(AuthContext);
+
+  if (role === 'store') {
+    return (
+      <Box
+        sx={{
+          minHeight: 'calc(100vh - 120px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          px: { xs: 2, sm: 3 },
+          py: { xs: 4, sm: 6 },
+        }}
+      >
+        <Paper
+          elevation={0}
+          sx={{
+            p: { xs: 3, sm: 5 },
+            borderRadius: 4,
+            border: '1px solid #cdecea',
+            textAlign: 'center',
+            maxWidth: 420,
+            width: '100%',
+            backgroundColor: '#ffffff',
+            boxShadow: '0 10px 30px rgba(15, 159, 154, 0.08)',
+          }}
+        >
+          <Typography
+            sx={{
+              fontSize: { xs: '1.35rem', sm: '1.8rem' },
+              fontWeight: 900,
+              color: '#007f7a',
+              mb: 1,
+            }}
+          >
+            Welcome to Emedix GC
+          </Typography>
+
+          <Typography
+            sx={{
+              fontSize: { xs: '0.9rem', sm: '1rem' },
+              color: '#4b6470',
+              mb: 3,
+            }}
+          >
+            View and manage your store's processed orders.
+          </Typography>
+
+          <Card
+            variant="outlined"
+            sx={{
+              borderRadius: 3,
+              borderColor: '#d1f0ed',
+              backgroundColor: '#f8fffe',
+              transition: 'box-shadow 0.2s ease, border-color 0.2s ease',
+              '&:hover': {
+                borderColor: '#0f9f9a',
+                boxShadow: '0 6px 20px rgba(15, 159, 154, 0.15)',
+              },
+            }}
+          >
+            <CardActionArea
+              onClick={() => navigate('/processed-orders')}
+              sx={{ borderRadius: 3, textAlign: 'left' }}
+              aria-label="Open processed orders"
+            >
+              <CardContent>
+                <TableChartIcon sx={{ color: '#8e24aa', fontSize: 36, mb: 1 }} />
+
+                <Typography fontWeight={800} color="#113b4a">
+                  Processed Orders
+                </Typography>
+
+                <Typography variant="body2" sx={{ color: '#607d8b', mt: 0.8 }}>
+                  View and update the status of your store's orders.
+                </Typography>
+              </CardContent>
+            </CardActionArea>
+          </Card>
+        </Paper>
+      </Box>
+    );
+  }
 
   return (
     <Box

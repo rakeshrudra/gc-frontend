@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import ChatIcon from "@mui/icons-material/Chat";
 import InfoIcon from "@mui/icons-material/Info";
+import { AuthContext } from "../context/AuthContext";
 
 import {
   Box,
@@ -117,6 +118,9 @@ const todayDate = () => {
 
 const ProcessedOrders = () => {
   const navigate = useNavigate();
+  const { role } = useContext(AuthContext);
+  const isStoreRole = role === "store";
+  const basePath = isStoreRole ? "/processed-orders/store" : "/processed-orders";
 
   const [orders, setOrders] = useState([]);
   const [error, setError] = useState("");
@@ -139,7 +143,6 @@ const ProcessedOrders = () => {
   const [pendingStatus, setPendingStatus] = useState("");
   const [remarks, setRemarks] = useState("");
   const [statusLogs, setStatusLogs] = useState([]);
-  const [isTransportReadonly, setIsTransportReadonly] = useState(false);
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [itemsLoading, setItemsLoading] = useState(false);
   const [statusLogsLoading, setStatusLogsLoading] = useState(false);
@@ -177,6 +180,7 @@ const ProcessedOrders = () => {
         storeSearch,
         page,
         rowsPerPage,
+        basePath,
       );
 
       setOrders(result.data || []);
@@ -205,7 +209,7 @@ const ProcessedOrders = () => {
 
   useEffect(() => {
     loadOrders();
-  }, [sort, storeSearch, page]);
+  }, [sort, storeSearch, page, basePath]);
 
   useEffect(() => {
     const loadAdmins = async () => {
@@ -247,7 +251,7 @@ const ProcessedOrders = () => {
 
     try {
       setTransportDetailsLoading(true);
-      const details = await getTransportDetails(order.id);
+      const details = await getTransportDetails(order.id, basePath);
 
       setTransportForm({
         busNo: details?.busNo || "",
@@ -292,7 +296,7 @@ const ProcessedOrders = () => {
 
     try {
       setStatusLogsLoading(true);
-      const logs = await getStatusLogs(order.id);
+      const logs = await getStatusLogs(order.id, basePath);
       setStatusLogs(logs || []);
     } catch (err) {
       setStatusLogs([]);
@@ -355,11 +359,15 @@ const ProcessedOrders = () => {
       setError("");
       setDispatchLabelLoadingId(order.id);
 
-      await getDispatchLabel(order.id);
+      await getDispatchLabel(order.id, basePath);
 
       window.open(`/dispatch-labels/${order.id}`, "_blank");
     } catch (err) {
-      openDispatchPopup(order);
+      if (isStoreRole) {
+        setError("Dispatch label not yet available for this order");
+      } else {
+        openDispatchPopup(order);
+      }
     } finally {
       setDispatchLabelLoadingId(null);
     }
@@ -372,7 +380,7 @@ const ProcessedOrders = () => {
       setOrderItems([]);
       setOpenItemsModal(true);
       setItemsLoading(true);
-      const data = await getProcessedOrderItems(order.id);
+      const data = await getProcessedOrderItems(order.id, basePath);
       setOrderItems(data || []);
     } catch (err) {
       setError("Failed to load order items");
@@ -391,7 +399,7 @@ const ProcessedOrders = () => {
       setOpenRemarksModal(true);
       setStatusLogsLoading(true);
 
-      const logs = await getStatusLogs(order.id);
+      const logs = await getStatusLogs(order.id, basePath);
       setStatusLogs(logs || []);
     } catch (err) {
       setError("Failed to load remarks history");
@@ -586,33 +594,37 @@ const ProcessedOrders = () => {
             {sort === "newest" ? "Newest to Oldest" : "Oldest to Newest"}
           </Button>
 
-          <Button
-            variant="outlined"
-            onClick={() => navigate("/dashboard")}
-            sx={{
-              fontWeight: 700,
-              borderColor: "#0f9f9a",
-              color: "#0f9f9a",
-              "&:hover": {
-                borderColor: "#0b7f7b",
-                backgroundColor: "#e6f7f6",
-              },
-            }}
-          >
-            Go To Report
-          </Button>
+          {!isStoreRole && (
+            <Button
+              variant="outlined"
+              onClick={() => navigate("/dashboard")}
+              sx={{
+                fontWeight: 700,
+                borderColor: "#0f9f9a",
+                color: "#0f9f9a",
+                "&:hover": {
+                  borderColor: "#0b7f7b",
+                  backgroundColor: "#e6f7f6",
+                },
+              }}
+            >
+              Go To Report
+            </Button>
+          )}
 
-          <TextField
-            size="small"
-            label="Search Store"
-            placeholder="Enter store name"
-            value={storeSearch}
-            onChange={(e) => {
-              setPage(1);
-              setStoreSearch(e.target.value);
-            }}
-            sx={{ minWidth: 280, backgroundColor: "#fff" }}
-          />
+          {!isStoreRole && (
+            <TextField
+              size="small"
+              label="Search Store"
+              placeholder="Enter store name"
+              value={storeSearch}
+              onChange={(e) => {
+                setPage(1);
+                setStoreSearch(e.target.value);
+              }}
+              sx={{ minWidth: 280, backgroundColor: "#fff" }}
+            />
+          )}
         </Stack>
 
         <TableContainer component={Paper} sx={{ overflowX: "auto" }}>
@@ -725,28 +737,47 @@ const ProcessedOrders = () => {
                   )}
 
                   <TableCell>
-                    <Select
-                      size="small"
-                      value={order.status}
-                      onChange={(e) =>
-                        handleStatusChange(order, e.target.value)
-                      }
-                      sx={{
-                        minWidth: 190,
-                        fontWeight: 800,
-                        color: "#fff",
-                        backgroundColor: getStatusColor(order.status),
-                        "& .MuiSelect-icon": {
+                    {isStoreRole ? (
+                      <Box
+                        sx={{
+                          display: "inline-block",
+                          minWidth: 190,
+                          px: 1.5,
+                          py: 0.75,
+                          borderRadius: 1,
+                          textAlign: "center",
+                          fontWeight: 800,
+                          fontSize: "0.8125rem",
                           color: "#fff",
-                        },
-                      }}
-                    >
-                      {statuses.map((status) => (
-                        <MenuItem key={status} value={status}>
-                          {status}
-                        </MenuItem>
-                      ))}
-                    </Select>
+                          backgroundColor: getStatusColor(order.status),
+                        }}
+                      >
+                        {order.status}
+                      </Box>
+                    ) : (
+                      <Select
+                        size="small"
+                        value={order.status}
+                        onChange={(e) =>
+                          handleStatusChange(order, e.target.value)
+                        }
+                        sx={{
+                          minWidth: 190,
+                          fontWeight: 800,
+                          color: "#fff",
+                          backgroundColor: getStatusColor(order.status),
+                          "& .MuiSelect-icon": {
+                            color: "#fff",
+                          },
+                        }}
+                      >
+                        {statuses.map((status) => (
+                          <MenuItem key={status} value={status}>
+                            {status}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    )}
                   </TableCell>
                   <TableCell
                     sx={{
@@ -821,20 +852,22 @@ const ProcessedOrders = () => {
                         </IconButton>
                       </Tooltip>
 
-                      <Tooltip title="Add Transport Details">
-                        <IconButton
-                          onClick={() => handleTransportClick(order)}
-                          sx={{
-                            color: "#1976d2",
-                            border: "1px solid #1976d2",
-                            "&:hover": {
-                              backgroundColor: "#e3f2fd",
-                            },
-                          }}
-                        >
-                          <LocalShippingIcon />
-                        </IconButton>
-                      </Tooltip>
+                      {!isStoreRole && (
+                        <Tooltip title="Add Transport Details">
+                          <IconButton
+                            onClick={() => handleTransportClick(order)}
+                            sx={{
+                              color: "#1976d2",
+                              border: "1px solid #1976d2",
+                              "&:hover": {
+                                backgroundColor: "#e3f2fd",
+                              },
+                            }}
+                          >
+                            <LocalShippingIcon />
+                          </IconButton>
+                        </Tooltip>
+                      )}
                     </Box>
                   </TableCell>
                   </TableRow>
@@ -1091,7 +1124,6 @@ const ProcessedOrders = () => {
                 rows={3}
                 fullWidth
                 required
-                disabled={isTransportReadonly}
               />
 
                 {statusLogsLoading && (
@@ -1194,15 +1226,17 @@ const ProcessedOrders = () => {
               </Box>
             ) : (
               <Stack spacing={2} sx={{ mt: 1 }}>
-                <TextField
-                  label="Remarks"
-                  value={remarks}
-                  onChange={(e) => setRemarks(e.target.value)}
-                  multiline
-                  rows={3}
-                  fullWidth
-                  required
-                />
+                {!isStoreRole && (
+                  <TextField
+                    label="Remarks"
+                    value={remarks}
+                    onChange={(e) => setRemarks(e.target.value)}
+                    multiline
+                    rows={3}
+                    fullWidth
+                    required
+                  />
+                )}
 
                 {statusLogs.length > 0 && (
                   <Box>
@@ -1229,24 +1263,28 @@ const ProcessedOrders = () => {
           </DialogContent>
 
           <DialogActions>
-            <Button onClick={() => setOpenRemarksModal(false)}>Cancel</Button>
-
-            <Button
-              variant="contained"
-              onClick={handleRemarksSubmit}
-              disabled={statusUpdateLoading || remarkSubmitLoading}
-              startIcon={
-                statusUpdateLoading || remarkSubmitLoading ? (
-                  <CircularProgress size={16} color="inherit" />
-                ) : null
-              }
-            >
-              {statusUpdateLoading || remarkSubmitLoading
-                ? isRemarkOnly
-                  ? "Saving..."
-                  : "Updating..."
-                : "Submit"}
+            <Button onClick={() => setOpenRemarksModal(false)}>
+              {isStoreRole ? "Close" : "Cancel"}
             </Button>
+
+            {!isStoreRole && (
+              <Button
+                variant="contained"
+                onClick={handleRemarksSubmit}
+                disabled={statusUpdateLoading || remarkSubmitLoading}
+                startIcon={
+                  statusUpdateLoading || remarkSubmitLoading ? (
+                    <CircularProgress size={16} color="inherit" />
+                  ) : null
+                }
+              >
+                {statusUpdateLoading || remarkSubmitLoading
+                  ? isRemarkOnly
+                    ? "Saving..."
+                    : "Updating..."
+                  : "Submit"}
+              </Button>
+            )}
           </DialogActions>
         </Dialog>
         <Dialog
