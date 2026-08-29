@@ -14,9 +14,10 @@ export const getProcessedOrders = async (
   sort = 'newest',
   store = '',
   page = 1,
-  limit = 50
+  limit = 50,
+  basePath = '/processed-orders'
 ) => {
-  const response = await api.get('/processed-orders', {
+  const response = await api.get(basePath, {
     params: {
       sort,
       store,
@@ -37,8 +38,8 @@ export const updateProcessedOrderStatus = async (id, status, remarks) => {
   return response.data;
 };
 
-export const getStatusLogs = async (id) => {
-  const response = await api.get(`/processed-orders/${id}/status-logs`);
+export const getStatusLogs = async (id, basePath = '/processed-orders') => {
+  const response = await api.get(`${basePath}/${id}/status-logs`);
   return response.data;
 };
 
@@ -50,14 +51,14 @@ export const createDispatchLabel = async (id, payload) => {
   return response.data;
 };
 
-export const getDispatchLabel = async (id) => {
-  const response = await api.get(`/processed-orders/${id}/dispatch-label`);
+export const getDispatchLabel = async (id, basePath = '/processed-orders') => {
+  const response = await api.get(`${basePath}/${id}/dispatch-label`);
   return response.data;
 };
 
-export const getTransportDetails = async (id) => {
+export const getTransportDetails = async (id, basePath = '/processed-orders') => {
   const response = await api.get(
-    `/processed-orders/${id}/transport-details`
+    `${basePath}/${id}/transport-details`
   );
   return response.data;
 };
@@ -75,8 +76,8 @@ export const getAdmins = async () => {
   return response.data;
 };
 
-export const getProcessedOrderItems = async (id) => {
-  const response = await api.get(`/processed-orders/${id}/items`);
+export const getProcessedOrderItems = async (id, basePath = '/processed-orders') => {
+  const response = await api.get(`${basePath}/${id}/items`);
   return response.data;
 };
 

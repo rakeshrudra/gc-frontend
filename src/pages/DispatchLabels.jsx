@@ -1,18 +1,21 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Box, Typography, CircularProgress } from "@mui/material";
 
 import { getDispatchLabel } from "../services/processedOrders";
+import { AuthContext } from "../context/AuthContext";
 
 const DispatchLabels = () => {
   const { id } = useParams();
+  const { role } = useContext(AuthContext);
+  const basePath = role === "store" ? "/processed-orders/store" : "/processed-orders";
 
   const [labelData, setLabelData] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const loadDispatchLabel = async () => {
     try {
-      const data = await getDispatchLabel(id);
+      const data = await getDispatchLabel(id, basePath);
       setLabelData(data);
     } catch (err) {
       console.error(err);
@@ -23,7 +26,7 @@ const DispatchLabels = () => {
 
   useEffect(() => {
     loadDispatchLabel();
-  }, []);
+  }, [basePath]);
 
   if (loading) {
     return (

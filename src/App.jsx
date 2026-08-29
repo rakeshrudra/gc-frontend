@@ -139,7 +139,7 @@ function App() {
         <Route
           path="/dashboard"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['admin']}>
               <Dashboard />
             </ProtectedRoute>
           }
@@ -148,7 +148,7 @@ function App() {
         <Route
           path="/medicine-vendor-search"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['admin']}>
               <Box
                 sx={{
                   minHeight: '100vh',
@@ -186,7 +186,7 @@ function App() {
         <Route
           path="/expiry-return"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['admin']}>
               <Box
                 sx={{
                   minHeight: '100vh',
