@@ -16,6 +16,7 @@ import {
   Divider,
   Menu,
   MenuItem,
+  Button,
 } from "@mui/material";
 
 import MenuIcon from "@mui/icons-material/Menu";
@@ -26,9 +27,12 @@ import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutlined";
 import SearchIcon from "@mui/icons-material/Search";
 import SettingsIcon from "@mui/icons-material/Settings";
 import TableChartIcon from "@mui/icons-material/TableChart";
+import BoltIcon from "@mui/icons-material/Bolt";
 
 import logo from "../assets/eops-logo.png";
+import vitalityLogo from "../assets/vitality-logo.png";
 import { AuthContext } from "../context/AuthContext";
+import { redirectToJiffy, redirectToVitality } from "../services/authApi";
 
 const Navbar = ({ onMenuSelect }) => {
   const navigate = useNavigate();
@@ -84,10 +88,13 @@ const Navbar = ({ onMenuSelect }) => {
 
   const drawerContent = (
     <Box
-      sx={{ width: 250 }}
+      sx={{
+        width: 250,
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+      }}
       role="presentation"
-      onClick={toggleDrawer(false)}
-      onKeyDown={toggleDrawer(false)}
     >
       <Box
         sx={{
@@ -239,6 +246,55 @@ const Navbar = ({ onMenuSelect }) => {
           </ListItem>
         )}
       </List>
+
+      <Box sx={{ mt: "auto", p: 2, display: "flex", flexDirection: "column", gap: 1 }}>
+        <Button
+          fullWidth
+          variant="contained"
+          startIcon={<BoltIcon />}
+          onClick={() => {
+            setDrawerOpen(false);
+            redirectToJiffy();
+          }}
+          sx={{
+            borderRadius: 999,
+            textTransform: "none",
+            fontWeight: 700,
+            backgroundColor: "#f39c12",
+            boxShadow: "0 4px 12px rgba(243, 156, 18, 0.4)",
+            "&:hover": {
+              backgroundColor: "#d6870f",
+            },
+          }}
+        >
+          Go to Jiffy
+        </Button>
+
+        <Button
+          fullWidth
+          variant="outlined"
+          startIcon={
+            <img src={vitalityLogo} alt="" style={{ width: 20, height: 20 }} />
+          }
+          onClick={() => {
+            setDrawerOpen(false);
+            redirectToVitality();
+          }}
+          sx={{
+            borderRadius: 999,
+            textTransform: "none",
+            fontWeight: 700,
+            color: "#0f9f9a",
+            borderColor: "#0f9f9a",
+            "&:hover": {
+              backgroundColor: "#e9fffb",
+              borderColor: "#0f9f9a",
+            },
+          }}
+        >
+          Go to Vitality
+        </Button>
+      </Box>
     </Box>
   );
 
