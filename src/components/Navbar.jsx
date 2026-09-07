@@ -28,6 +28,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import SettingsIcon from "@mui/icons-material/Settings";
 import TableChartIcon from "@mui/icons-material/TableChart";
 import BoltIcon from "@mui/icons-material/Bolt";
+import UploadFileIcon from "@mui/icons-material/UploadFile";
 
 import logo from "../assets/eops-logo.png";
 import vitalityLogo from "../assets/vitality-logo.png";
@@ -211,6 +212,29 @@ const Navbar = ({ onMenuSelect }) => {
                     }}
                   >
                     Expiry Return
+                  </Typography>
+                }
+              />
+            </ListItemButton>
+          </ListItem>
+        )}
+
+        {/* MASTER UPLOAD */}
+        {!isStoreRole && (
+          <ListItem disablePadding>
+            <ListItemButton onClick={() => handleMenuClick("/master-upload")}>
+              <ListItemIcon>
+                <UploadFileIcon sx={{ color: "#0f9f9a" }} />
+              </ListItemIcon>
+              <ListItemText
+                primary={
+                  <Typography
+                    sx={{
+                      fontWeight: 600,
+                      fontSize: "0.9rem",
+                    }}
+                  >
+                    Master Upload
                   </Typography>
                 }
               />

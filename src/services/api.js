@@ -66,4 +66,36 @@ export const searchMasterMedicines = async (query) => {
   return response.data;
 };
 
+export const uploadMasterData = async (file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const response = await api.post('/match/master/upload', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+
+  return response.data;
+};
+
+export const getMasterUploadPage = async (uploadId, { page = 1, limit = 50, search = '' } = {}) => {
+  const response = await api.get(`/match/master/upload/${uploadId}`, {
+    params: { page, limit, search },
+  });
+
+  return response.data;
+};
+
+export const getLatestMasterDate = async () => {
+  const response = await api.get('/match/master/latest-date');
+  return response.data;
+};
+
+export const getAllMasterRows = async ({ page = 1, limit = 50, search = '' } = {}) => {
+  const response = await api.get('/match/master', {
+    params: { page, limit, search },
+  });
+
+  return response.data;
+};
+
 export default api;
