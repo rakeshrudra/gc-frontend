@@ -5,8 +5,8 @@ import { AuthContext } from '../context/AuthContext';
 import { redirectToVitalityLogin } from '../services/authApi';
 import NotProvisioned from '../pages/NotProvisioned';
 
-export function ProtectedRoute({ children, allowedRoles }) {
-  const { isAuthenticated, isProvisioned, isLoading, role } = useContext(AuthContext);
+export function ProtectedRoute({ children, allowedRoles, allowedAdminRoles }) {
+  const { isAuthenticated, isProvisioned, isLoading, role, adminRole } = useContext(AuthContext);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -35,6 +35,10 @@ export function ProtectedRoute({ children, allowedRoles }) {
   }
 
   if (allowedRoles && !allowedRoles.includes(role)) {
+    return <Navigate to="/home" replace />;
+  }
+
+  if (allowedAdminRoles && !allowedAdminRoles.includes(adminRole)) {
     return <Navigate to="/home" replace />;
   }
 

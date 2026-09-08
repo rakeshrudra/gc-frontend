@@ -29,6 +29,7 @@ import SettingsIcon from "@mui/icons-material/Settings";
 import TableChartIcon from "@mui/icons-material/TableChart";
 import BoltIcon from "@mui/icons-material/Bolt";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
+import PersonAddAlt1Icon from "@mui/icons-material/PersonAddAlt1";
 
 import logo from "../assets/eops-logo.png";
 import vitalityLogo from "../assets/vitality-logo.png";
@@ -38,8 +39,14 @@ import { redirectToJiffy, redirectToVitality } from "../services/authApi";
 const Navbar = ({ onMenuSelect }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { logout, role } = useContext(AuthContext);
+  const { logout, role, adminRole } = useContext(AuthContext);
   const isStoreRole = role === "store";
+  const canAccessOnboarding = [
+    "emedix_sales",
+    "emedix_op_admin",
+    "emedix_admin",
+    "emedix_superadmin",
+  ].includes(adminRole);
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [settingsAnchorEl, setSettingsAnchorEl] = useState(null);
@@ -235,6 +242,30 @@ const Navbar = ({ onMenuSelect }) => {
                     }}
                   >
                     Master Upload
+                  </Typography>
+                }
+              />
+            </ListItemButton>
+          </ListItem>
+        )}
+
+        {/* CREATE ONBOARDING */}
+        {canAccessOnboarding && (
+          <ListItem disablePadding>
+            <ListItemButton onClick={() => handleMenuClick("/onboarding")}>
+              <ListItemIcon>
+                <PersonAddAlt1Icon sx={{ color: "#0f9f9a" }} />
+              </ListItemIcon>
+
+              <ListItemText
+                primary={
+                  <Typography
+                    sx={{
+                      fontWeight: 600,
+                      fontSize: "0.9rem",
+                    }}
+                  >
+                    Create Onboarding
                   </Typography>
                 }
               />
