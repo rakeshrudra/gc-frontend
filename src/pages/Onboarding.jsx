@@ -426,6 +426,7 @@ const Onboarding = () => {
           size="small"
           variant="contained"
           endIcon={<ArrowForwardIcon sx={{ fontSize: 16 }} />}
+          onClick={() => window.open(`/contracts/${row.id}`, '_blank', 'noopener,noreferrer')}
           sx={{
             borderRadius: '999px',
             fontWeight: 600,

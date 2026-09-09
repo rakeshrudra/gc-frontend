@@ -19,6 +19,7 @@ import DispatchLabels from './pages/DispatchLabels';
 import ExpiryReturn from './pages/ExpiryReturn';
 import MasterUpload from './pages/MasterUpload';
 import Onboarding from './pages/Onboarding';
+import Contracts from './pages/Contracts';
 
 const theme = createTheme({
   typography: {
@@ -248,6 +249,22 @@ function App() {
                   <Onboarding />
                 </Container>
               </Box>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/contracts/:clientId"
+          element={
+            <ProtectedRoute
+              allowedAdminRoles={[
+                'emedix_sales',
+                'emedix_op_admin',
+                'emedix_admin',
+                'emedix_superadmin',
+              ]}
+            >
+              <Contracts />
             </ProtectedRoute>
           }
         />
