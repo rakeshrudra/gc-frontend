@@ -27,6 +27,7 @@ import AddIcon from '@mui/icons-material/Add';
 import AddAPhotoIcon from '@mui/icons-material/AddAPhoto';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutlined';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import DescriptionIcon from '@mui/icons-material/Description';
 
 import { AuthContext } from '../context/AuthContext';
 import {
@@ -35,6 +36,7 @@ import {
   getOnboardingRemarks,
   updateOnboardingStatus,
 } from '../services/onboarding';
+import { getContracts } from '../services/contracts';
 
 const columns = [
   { key: 'name', label: 'Name' },
@@ -102,6 +104,7 @@ const Onboarding = () => {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [contractClientIds, setContractClientIds] = useState(new Set());
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
@@ -131,8 +134,20 @@ const Onboarding = () => {
       setError('');
 
       try {
-        const data = await getOnboardingCases();
-        if (!cancelled) setRows(Array.isArray(data) ? data : []);
+        const [cases, contracts] = await Promise.all([
+          getOnboardingCases(),
+          getContracts().catch(() => []),
+        ]);
+
+        if (!cancelled) {
+          setRows(Array.isArray(cases) ? cases : []);
+          const ids = new Set(
+            (Array.isArray(contracts) ? contracts : []).map((contract) =>
+              String(contract.onboardingCase?.id),
+            ),
+          );
+          setContractClientIds(ids);
+        }
       } catch (err) {
         if (!cancelled) {
           setError(err.response?.data?.message || 'Failed to load onboarding cases.');
@@ -421,7 +436,7 @@ const Onboarding = () => {
         View Remarks
       </Button>
 
-      {row.status === 'site_visit_done' && (
+      {row.status === 'site_visit_done' && !contractClientIds.has(String(row.id)) && (
         <Button
           size="small"
           variant="contained"
@@ -466,21 +481,45 @@ const Onboarding = () => {
           Onboarding
         </Typography>
 
-        {isSalesRole && (
+        <Stack direction="row" spacing={1.5}>
           <Button
             variant="contained"
-            startIcon={<AddIcon />}
-            onClick={handleOpenDialog}
+            startIcon={<DescriptionIcon sx={{ fontSize: 18 }} />}
+            endIcon={<ArrowForwardIcon sx={{ fontSize: 16 }} />}
+            onClick={() => window.open('/contracts', '_blank', 'noopener,noreferrer')}
             sx={{
-              borderRadius: '8px',
+              borderRadius: '999px',
               fontWeight: 700,
-              background: 'linear-gradient(135deg, #2bb3b1, #3aaed8)',
+              textTransform: 'none',
+              px: 2.25,
+              background: 'linear-gradient(135deg, #6a5cff, #8f7bff)',
               color: '#ffffff',
+              boxShadow: '0 2px 8px rgba(106,92,255,0.3)',
+              '&:hover': {
+                background: 'linear-gradient(135deg, #5c4ef2, #8067ff)',
+                boxShadow: '0 3px 10px rgba(106,92,255,0.4)',
+              },
             }}
           >
-            Add New
+            View Contracts
           </Button>
-        )}
+
+          {isSalesRole && (
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={handleOpenDialog}
+              sx={{
+                borderRadius: '8px',
+                fontWeight: 700,
+                background: 'linear-gradient(135deg, #2bb3b1, #3aaed8)',
+                color: '#ffffff',
+              }}
+            >
+              Add New
+            </Button>
+          )}
+        </Stack>
       </Box>
 
       <Collapse in={!!error}>

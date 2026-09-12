@@ -254,6 +254,30 @@ function App() {
         />
 
         <Route
+          path="/contracts"
+          element={
+            <ProtectedRoute
+              allowedAdminRoles={[
+                'emedix_sales',
+                'emedix_op_admin',
+                'emedix_admin',
+                'emedix_superadmin',
+              ]}
+            >
+              <Box
+                sx={{
+                  minHeight: '100vh',
+                  background: '#f4fdfc',
+                }}
+              >
+                <Navbar />
+                <Contracts />
+              </Box>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
           path="/contracts/:clientId"
           element={
             <ProtectedRoute
@@ -264,7 +288,15 @@ function App() {
                 'emedix_superadmin',
               ]}
             >
-              <Contracts />
+              <Box
+                sx={{
+                  minHeight: '100vh',
+                  background: '#f4fdfc',
+                }}
+              >
+                <Navbar />
+                <Contracts />
+              </Box>
             </ProtectedRoute>
           }
         />

@@ -16,3 +16,15 @@ export const createContract = async (clientId, { remark, aadhaar, pan }) => {
   });
   return response.data;
 };
+
+export const prepareContract = async (contractId, fields) => {
+  const response = await api.post(`/contracts/${contractId}/prepare`, fields);
+  return response.data;
+};
+
+export const getGeneratedContractBlobUrl = async (contractId) => {
+  const response = await api.get(`/contracts/${contractId}/file`, {
+    responseType: 'blob',
+  });
+  return URL.createObjectURL(response.data);
+};
