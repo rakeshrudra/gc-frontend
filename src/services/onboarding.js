@@ -27,6 +27,11 @@ export const updateOnboardingStatus = async (id, status, remark, photo) => {
   return response.data;
 };
 
+export const cancelOnboardingCase = async (id, remark) => {
+  const response = await api.patch(`/onboarding/${id}/cancel`, { remark });
+  return response.data;
+};
+
 export const getOnboardingRemarks = async (id) => {
   const response = await api.get(`/onboarding/${id}/remarks`);
   return response.data;

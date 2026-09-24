@@ -10,6 +10,8 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  IconButton,
+  Menu,
   MenuItem,
   Paper,
   Select,
@@ -28,9 +30,12 @@ import AddAPhotoIcon from '@mui/icons-material/AddAPhoto';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutlined';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import DescriptionIcon from '@mui/icons-material/Description';
+import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
 
 import { AuthContext } from '../context/AuthContext';
 import {
+  cancelOnboardingCase,
   createOnboardingCase,
   getOnboardingCases,
   getOnboardingRemarks,
@@ -42,6 +47,7 @@ const columns = [
   { key: 'name', label: 'Name' },
   { key: 'city', label: 'City' },
   { key: 'mobileNo', label: 'Mobile Number' },
+  { key: 'email', label: 'Email' },
   { key: 'location', label: 'Location' },
   { key: 'details', label: 'Details' },
   { key: 'status', label: 'Status' },
@@ -52,6 +58,7 @@ const emptyForm = {
   name: '',
   city: '',
   mobileNo: '',
+  email: '',
   location: '',
   details: '',
 };
@@ -61,6 +68,7 @@ const statusLabels = {
   approved: 'Approved',
   declined: 'Declined',
   site_visit_done: 'Site Visit Done',
+  cancelled: 'Cancelled',
 };
 
 const statusColors = {
@@ -68,7 +76,15 @@ const statusColors = {
   approved: { bg: '#d4edda', color: '#1e7e34' },
   declined: { bg: '#f8d7da', color: '#a71d2a' },
   site_visit_done: { bg: '#d6e4ff', color: '#1d4fa7' },
+  cancelled: { bg: '#eceff1', color: '#455a64' },
 };
+
+const CANCELLABLE_STATUSES = [
+  'awaiting_approval',
+  'approved',
+  'site_visit_done',
+  'pending_contract',
+];
 
 const statusOptions = ['awaiting_approval', 'approved', 'declined'];
 const siteVisitOptions = ['approved', 'site_visit_done'];
@@ -113,8 +129,19 @@ const Onboarding = () => {
 
   const [statusUpdatingId, setStatusUpdatingId] = useState(null);
 
+  const [approveCase, setApproveCase] = useState(null);
+  const [approveRemark, setApproveRemark] = useState('');
+  const [approveError, setApproveError] = useState('');
+
   const [declineCase, setDeclineCase] = useState(null);
   const [declineRemark, setDeclineRemark] = useState('');
+  const [declineError, setDeclineError] = useState('');
+
+  const [cancelCase, setCancelCase] = useState(null);
+  const [cancelRemark, setCancelRemark] = useState('');
+  const [cancelError, setCancelError] = useState('');
+
+  const [rowMenuAnchor, setRowMenuAnchor] = useState(null);
 
   const [siteVisitCase, setSiteVisitCase] = useState(null);
   const [siteVisitRemark, setSiteVisitRemark] = useState('');
@@ -180,13 +207,24 @@ const Onboarding = () => {
   const handleSubmit = async () => {
     setFormError('');
 
-    if (!form.name.trim() || !form.city.trim() || !form.mobileNo.trim() || !form.location.trim()) {
-      setFormError('Name, city, mobile number and location are required.');
+    if (
+      !form.name.trim() ||
+      !form.city.trim() ||
+      !form.mobileNo.trim() ||
+      !form.email.trim() ||
+      !form.location.trim()
+    ) {
+      setFormError('Name, city, mobile number, email and location are required.');
       return;
     }
 
     if (!/^\d{10}$/.test(form.mobileNo.trim())) {
       setFormError('Mobile number must be a 10 digit number.');
+      return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+      setFormError('Please enter a valid email address.');
       return;
     }
 
@@ -197,6 +235,7 @@ const Onboarding = () => {
         name: form.name.trim(),
         city: form.city.trim(),
         mobileNo: form.mobileNo.trim(),
+        email: form.email.trim(),
         location: form.location.trim(),
         details: form.details.trim() || undefined,
       });
@@ -213,9 +252,17 @@ const Onboarding = () => {
   const handleStatusSelect = (row, newStatus) => {
     if (newStatus === row.status) return;
 
+    if (newStatus === 'approved') {
+      setApproveCase(row);
+      setApproveRemark('');
+      setApproveError('');
+      return;
+    }
+
     if (newStatus === 'declined') {
       setDeclineCase(row);
       setDeclineRemark('');
+      setDeclineError('');
       return;
     }
 
@@ -243,24 +290,94 @@ const Onboarding = () => {
     }
   };
 
+  const handleCloseApprove = () => {
+    if (statusUpdatingId) return;
+    setApproveCase(null);
+    setApproveRemark('');
+    setApproveError('');
+  };
+
+  const handleConfirmApprove = async () => {
+    if (!approveRemark.trim()) {
+      setApproveError('A remark is required to approve this case.');
+      return;
+    }
+
+    const id = approveCase.id;
+    setStatusUpdatingId(id);
+    setApproveError('');
+
+    try {
+      const updated = await updateOnboardingStatus(id, 'approved', approveRemark.trim());
+      setRows((prev) => prev.map((row) => (row.id === id ? updated : row)));
+      setApproveCase(null);
+      setApproveRemark('');
+    } catch (err) {
+      setApproveError(err.response?.data?.message || 'Failed to update status.');
+    } finally {
+      setStatusUpdatingId(null);
+    }
+  };
+
   const handleCloseDecline = () => {
     if (statusUpdatingId) return;
     setDeclineCase(null);
     setDeclineRemark('');
+    setDeclineError('');
   };
 
   const handleConfirmDecline = async () => {
+    if (!declineRemark.trim()) {
+      setDeclineError('A remark is required to decline this case.');
+      return;
+    }
+
     const id = declineCase.id;
     setStatusUpdatingId(id);
-    setError('');
+    setDeclineError('');
 
     try {
-      const updated = await updateOnboardingStatus(id, 'declined', declineRemark.trim() || undefined);
+      const updated = await updateOnboardingStatus(id, 'declined', declineRemark.trim());
       setRows((prev) => prev.map((row) => (row.id === id ? updated : row)));
       setDeclineCase(null);
       setDeclineRemark('');
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to update status.');
+      setDeclineError(err.response?.data?.message || 'Failed to update status.');
+    } finally {
+      setStatusUpdatingId(null);
+    }
+  };
+
+  const handleOpenCancel = (row) => {
+    setCancelCase(row);
+    setCancelRemark('');
+    setCancelError('');
+  };
+
+  const handleCloseCancel = () => {
+    if (statusUpdatingId) return;
+    setCancelCase(null);
+    setCancelRemark('');
+    setCancelError('');
+  };
+
+  const handleConfirmCancel = async () => {
+    if (!cancelRemark.trim()) {
+      setCancelError('A remark is required to cancel this onboarding case.');
+      return;
+    }
+
+    const id = cancelCase.id;
+    setStatusUpdatingId(id);
+    setCancelError('');
+
+    try {
+      const updated = await cancelOnboardingCase(id, cancelRemark.trim());
+      setRows((prev) => prev.map((row) => (row.id === id ? updated : row)));
+      setCancelCase(null);
+      setCancelRemark('');
+    } catch (err) {
+      setCancelError(err.response?.data?.message || 'Failed to cancel onboarding case.');
     } finally {
       setStatusUpdatingId(null);
     }
@@ -464,8 +581,30 @@ const Onboarding = () => {
           Move to Contract
         </Button>
       )}
+
+      {canApprove && CANCELLABLE_STATUSES.includes(row.status) && (
+        <IconButton
+          size="small"
+          onClick={(event) => setRowMenuAnchor({ el: event.currentTarget, row })}
+          sx={{
+            ml: 'auto',
+            color: '#6b7280',
+            '&:hover': { backgroundColor: '#f4f4f6' },
+          }}
+        >
+          <MoreVertIcon fontSize="small" />
+        </IconButton>
+      )}
     </Stack>
   );
+
+  const handleCloseRowMenu = () => setRowMenuAnchor(null);
+
+  const handleCancelFromMenu = () => {
+    const row = rowMenuAnchor?.row;
+    handleCloseRowMenu();
+    if (row) handleOpenCancel(row);
+  };
 
   return (
     <Box sx={{ width: '100%', maxWidth: '100%', overflowX: 'hidden' }}>
@@ -626,6 +765,19 @@ const Onboarding = () => {
         </Table>
       </TableContainer>
 
+      <Menu
+        anchorEl={rowMenuAnchor?.el}
+        open={Boolean(rowMenuAnchor)}
+        onClose={handleCloseRowMenu}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <MenuItem onClick={handleCancelFromMenu} sx={{ color: '#a71d2a' }}>
+          <CancelOutlinedIcon fontSize="small" sx={{ mr: 1 }} />
+          Cancel Onboarding
+        </MenuItem>
+      </Menu>
+
       <Dialog open={dialogOpen} onClose={handleCloseDialog} fullWidth maxWidth="sm">
         <DialogTitle sx={{ fontWeight: 700, color: '#0f9f9a' }}>
           Add New Onboarding Case
@@ -661,6 +813,15 @@ const Onboarding = () => {
             fullWidth
             required
             inputProps={{ maxLength: 10 }}
+          />
+
+          <TextField
+            label="Email"
+            type="email"
+            value={form.email}
+            onChange={handleFieldChange('email')}
+            fullWidth
+            required
           />
 
           <TextField
@@ -700,18 +861,59 @@ const Onboarding = () => {
         </DialogActions>
       </Dialog>
 
+      <Dialog open={!!approveCase} onClose={handleCloseApprove} fullWidth maxWidth="sm">
+        <DialogTitle sx={{ fontWeight: 700, color: '#1e7e34' }}>
+          Approve {approveCase ? `— ${approveCase.name}` : ''}
+        </DialogTitle>
+
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+          {approveError && <Alert severity="error">{approveError}</Alert>}
+
+          <Typography variant="body2" sx={{ color: '#546e7a' }}>
+            A remark is required to approve this case.
+          </Typography>
+
+          <TextField
+            label="Remark"
+            required
+            value={approveRemark}
+            onChange={(event) => setApproveRemark(event.target.value)}
+            fullWidth
+            multiline
+            minRows={3}
+          />
+        </DialogContent>
+
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={handleCloseApprove} disabled={statusUpdatingId === approveCase?.id}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            color="success"
+            onClick={handleConfirmApprove}
+            disabled={statusUpdatingId === approveCase?.id}
+          >
+            Confirm Approve
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       <Dialog open={!!declineCase} onClose={handleCloseDecline} fullWidth maxWidth="sm">
         <DialogTitle sx={{ fontWeight: 700, color: '#a71d2a' }}>
           Decline {declineCase ? `— ${declineCase.name}` : ''}
         </DialogTitle>
 
         <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+          {declineError && <Alert severity="error">{declineError}</Alert>}
+
           <Typography variant="body2" sx={{ color: '#546e7a' }}>
-            You can add a remark for declining this case (optional).
+            A remark is required to decline this case.
           </Typography>
 
           <TextField
-            label="Remark (optional)"
+            label="Remark"
+            required
             value={declineRemark}
             onChange={(event) => setDeclineRemark(event.target.value)}
             fullWidth
@@ -731,6 +933,44 @@ const Onboarding = () => {
             disabled={statusUpdatingId === declineCase?.id}
           >
             Confirm Decline
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={!!cancelCase} onClose={handleCloseCancel} fullWidth maxWidth="sm">
+        <DialogTitle sx={{ fontWeight: 700, color: '#a71d2a' }}>
+          Cancel Onboarding {cancelCase ? `— ${cancelCase.name}` : ''}
+        </DialogTitle>
+
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: '20px !important' }}>
+          {cancelError && <Alert severity="error">{cancelError}</Alert>}
+
+          <Typography variant="body2" sx={{ color: '#546e7a' }}>
+            This will permanently stop this client's onboarding process. Please provide a reason.
+          </Typography>
+
+          <TextField
+            label="Remark"
+            value={cancelRemark}
+            onChange={(event) => setCancelRemark(event.target.value)}
+            fullWidth
+            required
+            multiline
+            minRows={3}
+          />
+        </DialogContent>
+
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={handleCloseCancel} disabled={statusUpdatingId === cancelCase?.id}>
+            Back
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={handleConfirmCancel}
+            disabled={statusUpdatingId === cancelCase?.id}
+          >
+            Confirm Cancel
           </Button>
         </DialogActions>
       </Dialog>
