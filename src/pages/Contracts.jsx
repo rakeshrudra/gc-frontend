@@ -12,30 +12,37 @@ import {
   DialogTitle,
   Divider,
   IconButton,
+  InputAdornment,
   Stack,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
+  TablePagination,
   TableRow,
   TextField,
   Typography,
 } from '@mui/material';
 import DescriptionIcon from '@mui/icons-material/Description';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
+import SearchIcon from '@mui/icons-material/Search';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlineOutlined';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import dayjs from 'dayjs';
 
 import { AuthContext } from '../context/AuthContext';
 import {
   createContract,
   getContracts,
+  getContractClientIds,
   prepareContract,
-  getGeneratedContractBlobUrl,
+  downloadGeneratedContract,
+  prepareLetter,
+  downloadGeneratedLetter,
 } from '../services/contracts';
 import { sendPhoneOtp, confirmPhoneOtp, resetRecaptcha } from '../services/phoneOtp';
 import { getReadableOtpError } from '../utils/otpError';
@@ -76,6 +83,16 @@ const emptyPrepareForm = {
   payments: [emptyPayment()],
 };
 
+const emptyLetterForm = {
+  letterDate: dayjs(),
+  clientNameEn: '',
+  clientNameHi: '',
+  cityEn: '',
+  districtEn: '',
+  cityHi: '',
+  districtHi: '',
+};
+
 const Contracts = () => {
   const { clientId } = useParams();
   const { admin } = useContext(AuthContext);
@@ -83,6 +100,12 @@ const Contracts = () => {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  const [page, setPage] = useState(0);
+  const [rowsPerPage] = useState(25);
+  const [totalRows, setTotalRows] = useState(0);
+  const [searchInput, setSearchInput] = useState('');
+  const [search, setSearch] = useState('');
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
@@ -101,13 +124,19 @@ const Contracts = () => {
   const [otpVerifying, setOtpVerifying] = useState(false);
   const [otpError, setOtpError] = useState('');
 
+  const [letterDialogRow, setLetterDialogRow] = useState(null);
+  const [letterForm, setLetterForm] = useState(emptyLetterForm);
+  const [preparingLetter, setPreparingLetter] = useState(false);
+  const [letterError, setLetterError] = useState('');
+
   const loadContracts = async () => {
     setLoading(true);
     setError('');
 
     try {
-      const data = await getContracts();
-      setRows(Array.isArray(data) ? data : []);
+      const result = await getContracts({ page: page + 1, limit: rowsPerPage, search });
+      setRows(Array.isArray(result?.data) ? result.data : []);
+      setTotalRows(result?.total ?? 0);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to load contracts.');
     } finally {
@@ -119,21 +148,15 @@ const Contracts = () => {
     let cancelled = false;
 
     (async () => {
-      try {
-        const data = await getContracts();
-        if (!cancelled) {
-          const contractRows = Array.isArray(data) ? data : [];
-          setRows(contractRows);
-          setLoading(false);
+      setLoading(true);
+      setError('');
 
-          if (clientId) {
-            const alreadyExists = contractRows.some(
-              (row) => String(row.onboardingCase?.id) === String(clientId),
-            );
-            if (!alreadyExists) {
-              setDialogOpen(true);
-            }
-          }
+      try {
+        const result = await getContracts({ page: page + 1, limit: rowsPerPage, search });
+        if (!cancelled) {
+          setRows(Array.isArray(result?.data) ? result.data : []);
+          setTotalRows(result?.total ?? 0);
+          setLoading(false);
         }
       } catch (err) {
         if (!cancelled) {
@@ -146,7 +169,44 @@ const Contracts = () => {
     return () => {
       cancelled = true;
     };
+  }, [page, rowsPerPage, search]);
+
+  useEffect(() => {
+    if (!clientId) return;
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const clientIds = await getContractClientIds();
+        if (!cancelled) {
+          const alreadyExists = clientIds.map(String).includes(String(clientId));
+          if (!alreadyExists) {
+            setDialogOpen(true);
+          }
+        }
+      } catch {
+        // Non-critical: fall through without auto-opening the dialog.
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [clientId]);
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setPage(0);
+      setSearch(searchInput.trim());
+    }, 400);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchInput]);
+
+  const handlePageChange = (event, newPage) => {
+    setPage(newPage);
+  };
 
   const handleCloseDialog = () => {
     if (submitting) return;
@@ -182,10 +242,9 @@ const Contracts = () => {
   const handleOpenPrepareDialog = async (row) => {
     if (row.status !== 'pending_contract') {
       try {
-        const blobUrl = await getGeneratedContractBlobUrl(row.id);
-        window.open(blobUrl, '_blank', 'noopener,noreferrer');
+        await downloadGeneratedContract(row.id);
       } catch (err) {
-        setError(err.response?.data?.message || 'Failed to open generated contract.');
+        setError(err.response?.data?.message || 'Failed to download generated contract.');
       }
       return;
     }
@@ -210,6 +269,18 @@ const Contracts = () => {
     setPrepareForm((prev) => ({ ...prev, signatoryAadhaar: formatted }));
   };
 
+  const handleRenewalFeeChange = (event) => {
+    const digitsOnly = event.target.value.replace(/\D/g, '');
+    const formatted = digitsOnly ? `Rs ${digitsOnly}+GST` : '';
+    setPrepareForm((prev) => ({ ...prev, renewalFee: formatted }));
+  };
+
+  const handleExclusivityRadiusChange = (event) => {
+    const digitsOnly = event.target.value.replace(/\D/g, '');
+    const formatted = digitsOnly ? `${digitsOnly} KM` : '';
+    setPrepareForm((prev) => ({ ...prev, exclusivityRadius: formatted }));
+  };
+
   const handlePrepareDateChange = (field) => (value) => {
     setPrepareForm((prev) => ({ ...prev, [field]: value }));
   };
@@ -223,6 +294,18 @@ const Contracts = () => {
       ...prev,
       payments: prev.payments.map((payment, i) =>
         i === index ? { ...payment, [field]: value } : payment,
+      ),
+    }));
+  };
+
+  const handlePaymentAmountChange = (index) => (event) => {
+    const digitsOnly = event.target.value.replace(/\D/g, '');
+    const formatted = digitsOnly ? `INR ${digitsOnly}` : '';
+
+    setPrepareForm((prev) => ({
+      ...prev,
+      payments: prev.payments.map((payment, i) =>
+        i === index ? { ...payment, amount: formatted } : payment,
       ),
     }));
   };
@@ -363,12 +446,83 @@ const Contracts = () => {
       await loadContracts();
       setPrepareDialogRow(null);
 
-      const blobUrl = await getGeneratedContractBlobUrl(prepareDialogRow.id);
-      window.open(blobUrl, '_blank', 'noopener,noreferrer');
+      await downloadGeneratedContract(prepareDialogRow.id);
     } catch (err) {
       setPrepareError(err.response?.data?.message || 'Failed to generate contract.');
     } finally {
       setPreparing(false);
+    }
+  };
+
+  const handleOpenLetterDialog = async (row) => {
+    if (row.generatedLetterFileId) {
+      try {
+        await downloadGeneratedLetter(row.id);
+      } catch (err) {
+        setError(err.response?.data?.message || 'Failed to download generated letter.');
+      }
+      return;
+    }
+
+    setLetterError('');
+    setLetterForm(emptyLetterForm);
+    setLetterDialogRow(row);
+  };
+
+  const handleCloseLetterDialog = () => {
+    if (preparingLetter) return;
+    setLetterDialogRow(null);
+  };
+
+  const handleLetterFieldChange = (field) => (event) => {
+    setLetterForm((prev) => ({ ...prev, [field]: event.target.value }));
+  };
+
+  const handleLetterDateChange = (value) => {
+    setLetterForm((prev) => ({ ...prev, letterDate: value }));
+  };
+
+  const handlePrepareLetterSubmit = async () => {
+    setLetterError('');
+
+    const requiredFields = [
+      ['letterDate', 'Date'],
+      ['clientNameEn', "Client's name (English)"],
+      ['clientNameHi', "Client's name (Hindi)"],
+      ['cityEn', 'City (English)'],
+      ['districtEn', 'District (English)'],
+      ['cityHi', 'City (Hindi)'],
+      ['districtHi', 'District (Hindi)'],
+    ];
+
+    for (const [field, label] of requiredFields) {
+      if (!letterForm[field]) {
+        setLetterError(`${label} is required.`);
+        return;
+      }
+    }
+
+    setPreparingLetter(true);
+
+    try {
+      await prepareLetter(letterDialogRow.id, {
+        letter_date: formatDateForContract(letterForm.letterDate),
+        client_name_en: letterForm.clientNameEn.trim(),
+        client_name_hi: letterForm.clientNameHi.trim(),
+        city_en: letterForm.cityEn.trim(),
+        district_en: letterForm.districtEn.trim(),
+        city_hi: letterForm.cityHi.trim(),
+        district_hi: letterForm.districtHi.trim(),
+      });
+
+      await loadContracts();
+      setLetterDialogRow(null);
+
+      await downloadGeneratedLetter(letterDialogRow.id);
+    } catch (err) {
+      setLetterError(err.response?.data?.message || 'Failed to generate letter.');
+    } finally {
+      setPreparingLetter(false);
     }
   };
 
@@ -439,6 +593,25 @@ const Contracts = () => {
             {error}
           </Alert>
         )}
+
+        <Box sx={{ mb: 2 }}>
+          <TextField
+            size="small"
+            placeholder="Search by client name"
+            value={searchInput}
+            onChange={(event) => setSearchInput(event.target.value)}
+            sx={{ minWidth: 280 }}
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon fontSize="small" />
+                  </InputAdornment>
+                ),
+              },
+            }}
+          />
+        </Box>
 
         <TableContainer
           sx={{
@@ -548,6 +721,33 @@ const Contracts = () => {
                             {isNew ? 'Prepare Contract' : 'View Contract'}
                           </Button>
 
+                          {!isNew && (
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              onClick={() => handleOpenLetterDialog(row)}
+                              sx={{
+                                borderRadius: '999px',
+                                fontWeight: 600,
+                                fontSize: '0.78rem',
+                                textTransform: 'none',
+                                whiteSpace: 'nowrap',
+                                px: 1.75,
+                                py: 0.5,
+                                minWidth: 0,
+                                lineHeight: 1.4,
+                                borderColor: '#6a5cff',
+                                color: '#6a5cff',
+                                '&:hover': {
+                                  borderColor: '#5c4ef2',
+                                  backgroundColor: 'rgba(106,92,255,0.06)',
+                                },
+                              }}
+                            >
+                              {row.generatedLetterFileId ? 'View Letter' : 'Prepare Letter'}
+                            </Button>
+                          )}
+
                           {isNew && (
                             <Chip
                               label="NEW"
@@ -578,6 +778,15 @@ const Contracts = () => {
             </TableBody>
           </Table>
         </TableContainer>
+
+        <TablePagination
+          component="div"
+          count={totalRows}
+          page={page}
+          onPageChange={handlePageChange}
+          rowsPerPage={rowsPerPage}
+          rowsPerPageOptions={[rowsPerPage]}
+        />
       </Box>
 
       <Dialog open={dialogOpen} onClose={handleCloseDialog} fullWidth maxWidth="sm">
@@ -753,7 +962,11 @@ const Contracts = () => {
             required
             multiline
             minRows={2}
-            helperText="Include locality/area, landmark, and PIN code — e.g. Ward No -34, Balua, Near Ugam Pandey College, Motihari - 845401"
+            helperText={
+              prepareForm.businessAddress.trim() && prepareForm.state.trim()
+                ? `Will appear as: "The Franchisee will operate the franchised business from the following business address ${prepareForm.businessAddress.trim()} ${prepareForm.state.trim()}, maintaining uniform standard facilities..."`
+                : 'Will appear as: "The Franchisee will operate the franchised business from the following business address Ward No -34 , Balua, Near Ugam Pandey College, Motihari - 845401 Bihar, maintaining uniform standard facilities..."'
+            }
           />
 
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
@@ -771,7 +984,11 @@ const Contracts = () => {
               onChange={handlePrepareFieldChange('territory')}
               fullWidth
               required
-              helperText="e.g. Ward No -34, Balua locality"
+              helperText={
+                prepareForm.territory.trim() && prepareForm.appointmentDate
+                  ? `Will appear as: "2.1. EMEDIX appoints the Franchisee on ${formatDateForContract(prepareForm.appointmentDate)} in the ${prepareForm.territory.trim()}..."`
+                  : 'Will appear as: "2.1. EMEDIX appoints the Franchisee on 28 December 2023 in the Ward No -34 , Balua locality..."'
+              }
             />
           </Stack>
 
@@ -806,21 +1023,29 @@ const Contracts = () => {
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
             <TextField
               label="Renewal Fee"
-              placeholder="Rs 20000+GST"
+              placeholder="Type digits only, e.g. 20000"
               value={prepareForm.renewalFee}
-              onChange={handlePrepareFieldChange('renewalFee')}
+              onChange={handleRenewalFeeChange}
               fullWidth
               required
-              helperText="e.g. Rs 20000+GST"
+              helperText={
+                prepareForm.renewalFee.trim()
+                  ? `Will appear as: "5.3. Renewal fees of rupees twenty thousand + GST will be charged from the franchisee (${prepareForm.renewalFee.trim()})"`
+                  : 'Type digits only — +GST is added automatically, e.g. Rs 20000+GST'
+              }
             />
             <TextField
               label="Exclusivity Radius"
-              placeholder="1 KM"
+              placeholder="Type digits only, e.g. 1"
               value={prepareForm.exclusivityRadius}
-              onChange={handlePrepareFieldChange('exclusivityRadius')}
+              onChange={handleExclusivityRadiusChange}
               fullWidth
               required
-              helperText="Include unit — e.g. 1 KM"
+              helperText={
+                prepareForm.exclusivityRadius.trim()
+                  ? `Will appear as: "6.10. The franchisor will not open any other Smart Pharmacy within ${prepareForm.exclusivityRadius.trim()} of the location..."`
+                  : 'Type digits only — KM is added automatically, e.g. 1 KM'
+              }
             />
           </Stack>
 
@@ -853,10 +1078,10 @@ const Contracts = () => {
               />
               <TextField
                 label="Amount"
-                placeholder="INR 50000"
-                helperText="Include INR"
+                placeholder="Digits only, e.g. 50000"
+                helperText="INR is added automatically"
                 value={payment.amount}
-                onChange={handlePaymentFieldChange(index, 'amount')}
+                onChange={handlePaymentAmountChange(index)}
                 size="small"
                 sx={{ minWidth: 140 }}
               />
@@ -962,6 +1187,100 @@ const Contracts = () => {
             }}
           >
             {otpVerifying ? <CircularProgress size={18} sx={{ color: '#fff' }} /> : 'Verify & Generate'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={Boolean(letterDialogRow)} onClose={handleCloseLetterDialog} fullWidth maxWidth="sm">
+        <DialogTitle sx={{ fontWeight: 700, color: '#2b2560' }}>
+          Prepare Letter — {letterDialogRow?.onboardingCase?.name}
+        </DialogTitle>
+
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: '20px !important' }}>
+          {letterError && <Alert severity="error">{letterError}</Alert>}
+
+          <DatePicker
+            label="Date"
+            value={letterForm.letterDate}
+            onChange={handleLetterDateChange}
+            slotProps={{
+              textField: { fullWidth: true, required: true },
+              popper: { sx: { zIndex: 1500 } },
+            }}
+          />
+
+          <TextField
+            label="Client's Name (English)"
+            value={letterForm.clientNameEn}
+            onChange={handleLetterFieldChange('clientNameEn')}
+            fullWidth
+            required
+            helperText="e.g. Ravi Ranjan Kumar"
+          />
+          <TextField
+            label="Client's Name (Hindi)"
+            value={letterForm.clientNameHi}
+            onChange={handleLetterFieldChange('clientNameHi')}
+            fullWidth
+            required
+            helperText="e.g. रवि रंजन कुमार"
+          />
+
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+            <TextField
+              label="City (English)"
+              value={letterForm.cityEn}
+              onChange={handleLetterFieldChange('cityEn')}
+              fullWidth
+              required
+              helperText="e.g. Ekma"
+            />
+            <TextField
+              label="District (English)"
+              value={letterForm.districtEn}
+              onChange={handleLetterFieldChange('districtEn')}
+              fullWidth
+              required
+              helperText="e.g. Saran"
+            />
+          </Stack>
+
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+            <TextField
+              label="City (Hindi)"
+              value={letterForm.cityHi}
+              onChange={handleLetterFieldChange('cityHi')}
+              fullWidth
+              required
+              helperText="e.g. एकमा"
+            />
+            <TextField
+              label="District (Hindi)"
+              value={letterForm.districtHi}
+              onChange={handleLetterFieldChange('districtHi')}
+              fullWidth
+              required
+              helperText="e.g. सारण"
+            />
+          </Stack>
+        </DialogContent>
+
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={handleCloseLetterDialog} disabled={preparingLetter}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handlePrepareLetterSubmit}
+            disabled={preparingLetter}
+            sx={{
+              borderRadius: '10px',
+              textTransform: 'none',
+              fontWeight: 700,
+              background: 'linear-gradient(135deg, #2bb3b1, #3aaed8)',
+            }}
+          >
+            {preparingLetter ? <CircularProgress size={18} sx={{ color: '#fff' }} /> : 'Generate Letter'}
           </Button>
         </DialogActions>
       </Dialog>

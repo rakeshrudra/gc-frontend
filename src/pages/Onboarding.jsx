@@ -11,6 +11,7 @@ import {
   DialogContent,
   DialogTitle,
   IconButton,
+  InputAdornment,
   Menu,
   MenuItem,
   Paper,
@@ -21,10 +22,12 @@ import {
   TableCell,
   TableContainer,
   TableHead,
+  TablePagination,
   TableRow,
   TextField,
   Typography,
 } from '@mui/material';
+import SearchIcon from '@mui/icons-material/Search';
 import AddIcon from '@mui/icons-material/Add';
 import AddAPhotoIcon from '@mui/icons-material/AddAPhoto';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutlined';
@@ -41,7 +44,7 @@ import {
   getOnboardingRemarks,
   updateOnboardingStatus,
 } from '../services/onboarding';
-import { getContracts } from '../services/contracts';
+import { getContractClientIds } from '../services/contracts';
 
 const columns = [
   { key: 'name', label: 'Name' },
@@ -122,6 +125,12 @@ const Onboarding = () => {
   const [error, setError] = useState('');
   const [contractClientIds, setContractClientIds] = useState(new Set());
 
+  const [page, setPage] = useState(0);
+  const [rowsPerPage] = useState(25);
+  const [totalRows, setTotalRows] = useState(0);
+  const [searchInput, setSearchInput] = useState('');
+  const [search, setSearch] = useState('');
+
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [submitting, setSubmitting] = useState(false);
@@ -161,19 +170,15 @@ const Onboarding = () => {
       setError('');
 
       try {
-        const [cases, contracts] = await Promise.all([
-          getOnboardingCases(),
-          getContracts().catch(() => []),
+        const [casesResult, contractClientIdList] = await Promise.all([
+          getOnboardingCases({ page: page + 1, limit: rowsPerPage, search }),
+          getContractClientIds().catch(() => []),
         ]);
 
         if (!cancelled) {
-          setRows(Array.isArray(cases) ? cases : []);
-          const ids = new Set(
-            (Array.isArray(contracts) ? contracts : []).map((contract) =>
-              String(contract.onboardingCase?.id),
-            ),
-          );
-          setContractClientIds(ids);
+          setRows(Array.isArray(casesResult?.data) ? casesResult.data : []);
+          setTotalRows(casesResult?.total ?? 0);
+          setContractClientIds(new Set(contractClientIdList.map(String)));
         }
       } catch (err) {
         if (!cancelled) {
@@ -187,7 +192,20 @@ const Onboarding = () => {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [page, rowsPerPage, search]);
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setPage(0);
+      setSearch(searchInput.trim());
+    }, 400);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchInput]);
+
+  const handlePageChange = (event, newPage) => {
+    setPage(newPage);
+  };
 
   const handleOpenDialog = () => {
     setForm(emptyForm);
@@ -667,6 +685,25 @@ const Onboarding = () => {
         </Alert>
       </Collapse>
 
+      <Box sx={{ mb: 2 }}>
+        <TextField
+          size="small"
+          placeholder="Search by client name"
+          value={searchInput}
+          onChange={(event) => setSearchInput(event.target.value)}
+          sx={{ minWidth: 280 }}
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon fontSize="small" />
+                </InputAdornment>
+              ),
+            },
+          }}
+        />
+      </Box>
+
       <TableContainer
         component={Paper}
         elevation={0}
@@ -764,6 +801,15 @@ const Onboarding = () => {
           </TableBody>
         </Table>
       </TableContainer>
+
+      <TablePagination
+        component="div"
+        count={totalRows}
+        page={page}
+        onPageChange={handlePageChange}
+        rowsPerPage={rowsPerPage}
+        rowsPerPageOptions={[rowsPerPage]}
+      />
 
       <Menu
         anchorEl={rowMenuAnchor?.el}

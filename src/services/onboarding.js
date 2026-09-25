@@ -5,8 +5,10 @@ export const createOnboardingCase = async (payload) => {
   return response.data;
 };
 
-export const getOnboardingCases = async () => {
-  const response = await api.get('/onboarding');
+export const getOnboardingCases = async ({ page = 1, limit = 25, search = '' } = {}) => {
+  const response = await api.get('/onboarding', {
+    params: { page, limit, search: search || undefined },
+  });
   return response.data;
 };
 
