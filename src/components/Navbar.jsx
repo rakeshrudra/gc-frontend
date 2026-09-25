@@ -17,6 +17,7 @@ import {
   Menu,
   MenuItem,
   Button,
+  Collapse,
 } from "@mui/material";
 
 import MenuIcon from "@mui/icons-material/Menu";
@@ -29,6 +30,10 @@ import SettingsIcon from "@mui/icons-material/Settings";
 import TableChartIcon from "@mui/icons-material/TableChart";
 import BoltIcon from "@mui/icons-material/Bolt";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
+import PersonAddAlt1Icon from "@mui/icons-material/PersonAddAlt1";
+import DescriptionIcon from "@mui/icons-material/Description";
+import ExpandLessIcon from "@mui/icons-material/ExpandLess";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 
 import logo from "../assets/eops-logo.png";
 import vitalityLogo from "../assets/vitality-logo.png";
@@ -38,11 +43,18 @@ import { redirectToJiffy, redirectToVitality } from "../services/authApi";
 const Navbar = ({ onMenuSelect }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { logout, role } = useContext(AuthContext);
+  const { logout, role, adminRole } = useContext(AuthContext);
   const isStoreRole = role === "store";
+  const canAccessOnboarding = [
+    "emedix_sales",
+    "emedix_op_admin",
+    "emedix_admin",
+    "emedix_superadmin",
+  ].includes(adminRole);
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [settingsAnchorEl, setSettingsAnchorEl] = useState(null);
+  const [onboardingMenuOpen, setOnboardingMenuOpen] = useState(false);
 
   const isHomePage = location.pathname === "/home";
   const settingsOpen = Boolean(settingsAnchorEl);
@@ -240,6 +252,80 @@ const Navbar = ({ onMenuSelect }) => {
               />
             </ListItemButton>
           </ListItem>
+        )}
+
+        {/* ONBOARDING GROUP */}
+        {canAccessOnboarding && (
+          <>
+            <ListItem disablePadding>
+              <ListItemButton onClick={() => setOnboardingMenuOpen((prev) => !prev)}>
+                <ListItemIcon>
+                  <PersonAddAlt1Icon sx={{ color: "#0f9f9a" }} />
+                </ListItemIcon>
+
+                <ListItemText
+                  primary={
+                    <Typography
+                      sx={{
+                        fontWeight: 600,
+                        fontSize: "0.9rem",
+                      }}
+                    >
+                      Create Onboarding
+                    </Typography>
+                  }
+                />
+
+                {onboardingMenuOpen ? (
+                  <ExpandLessIcon sx={{ color: "#0f9f9a" }} />
+                ) : (
+                  <ExpandMoreIcon sx={{ color: "#0f9f9a" }} />
+                )}
+              </ListItemButton>
+            </ListItem>
+
+            <Collapse in={onboardingMenuOpen} timeout="auto" unmountOnExit>
+              <List disablePadding>
+                <ListItem disablePadding>
+                  <ListItemButton
+                    sx={{ pl: 4 }}
+                    onClick={() => handleMenuClick("/onboarding")}
+                  >
+                    <ListItemIcon>
+                      <PersonAddAlt1Icon sx={{ color: "#0f9f9a", fontSize: 20 }} />
+                    </ListItemIcon>
+
+                    <ListItemText
+                      primary={
+                        <Typography sx={{ fontWeight: 600, fontSize: "0.85rem" }}>
+                          Clients
+                        </Typography>
+                      }
+                    />
+                  </ListItemButton>
+                </ListItem>
+
+                <ListItem disablePadding>
+                  <ListItemButton
+                    sx={{ pl: 4 }}
+                    onClick={() => handleMenuClick("/contracts")}
+                  >
+                    <ListItemIcon>
+                      <DescriptionIcon sx={{ color: "#0f9f9a", fontSize: 20 }} />
+                    </ListItemIcon>
+
+                    <ListItemText
+                      primary={
+                        <Typography sx={{ fontWeight: 600, fontSize: "0.85rem" }}>
+                          Contracts
+                        </Typography>
+                      }
+                    />
+                  </ListItemButton>
+                </ListItem>
+              </List>
+            </Collapse>
+          </>
         )}
 
         {/* SEARCH */}

@@ -18,6 +18,8 @@ import ProcessedOrders from './pages/ProcessedOrders';
 import DispatchLabels from './pages/DispatchLabels';
 import ExpiryReturn from './pages/ExpiryReturn';
 import MasterUpload from './pages/MasterUpload';
+import Onboarding from './pages/Onboarding';
+import Contracts from './pages/Contracts';
 
 const theme = createTheme({
   typography: {
@@ -219,6 +221,81 @@ function App() {
                 <Container maxWidth="xl" sx={{ py: 3 }}>
                   <MasterUpload />
                 </Container>
+              </Box>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/onboarding"
+          element={
+            <ProtectedRoute
+              allowedAdminRoles={[
+                'emedix_sales',
+                'emedix_op_admin',
+                'emedix_admin',
+                'emedix_superadmin',
+              ]}
+            >
+              <Box
+                sx={{
+                  minHeight: '100vh',
+                  background: '#f4fdfc',
+                }}
+              >
+                <Navbar />
+
+                <Container maxWidth="xl" sx={{ py: 3 }}>
+                  <Onboarding />
+                </Container>
+              </Box>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/contracts"
+          element={
+            <ProtectedRoute
+              allowedAdminRoles={[
+                'emedix_sales',
+                'emedix_op_admin',
+                'emedix_admin',
+                'emedix_superadmin',
+              ]}
+            >
+              <Box
+                sx={{
+                  minHeight: '100vh',
+                  background: '#f4fdfc',
+                }}
+              >
+                <Navbar />
+                <Contracts />
+              </Box>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/contracts/:clientId"
+          element={
+            <ProtectedRoute
+              allowedAdminRoles={[
+                'emedix_sales',
+                'emedix_op_admin',
+                'emedix_admin',
+                'emedix_superadmin',
+              ]}
+            >
+              <Box
+                sx={{
+                  minHeight: '100vh',
+                  background: '#f4fdfc',
+                }}
+              >
+                <Navbar />
+                <Contracts />
               </Box>
             </ProtectedRoute>
           }

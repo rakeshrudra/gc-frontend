@@ -8,6 +8,7 @@ export function AuthProvider({ children }) {
   const [admin, setAdmin] = useState(null);
   const [storeUser, setStoreUser] = useState(null);
   const [role, setRole] = useState(null); // 'admin' | 'store' | null
+  const [adminRole, setAdminRole] = useState(null); // fine-grained AdminRole enum value, e.g. 'emedix_sales'
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isProvisioned, setIsProvisioned] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
@@ -30,6 +31,7 @@ export function AuthProvider({ children }) {
       try {
         const response = await api.get('/admins/me');
         setAdmin(response.data);
+        setAdminRole(response.data?.role ?? null);
         setRole('admin');
         setIsAuthenticated(true);
         setIsProvisioned(true);
@@ -68,6 +70,7 @@ export function AuthProvider({ children }) {
       setAdmin(null);
       setStoreUser(null);
       setRole(null);
+      setAdminRole(null);
       setIsAuthenticated(false);
       redirectToVitalityLogin();
     }
@@ -78,12 +81,13 @@ export function AuthProvider({ children }) {
       admin,
       storeUser,
       role,
+      adminRole,
       isAuthenticated,
       isProvisioned,
       isLoading,
       logout,
     }),
-    [admin, storeUser, role, isAuthenticated, isProvisioned, isLoading, logout]
+    [admin, storeUser, role, adminRole, isAuthenticated, isProvisioned, isLoading, logout]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
