@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
   Alert,
   Box,
@@ -95,6 +95,7 @@ const emptyLetterForm = {
 
 const Contracts = () => {
   const { clientId } = useParams();
+  const navigate = useNavigate();
   const { admin } = useContext(AuthContext);
 
   const [rows, setRows] = useState([]);
@@ -128,6 +129,9 @@ const Contracts = () => {
   const [letterForm, setLetterForm] = useState(emptyLetterForm);
   const [preparingLetter, setPreparingLetter] = useState(false);
   const [letterError, setLetterError] = useState('');
+
+  const [downloadingContractId, setDownloadingContractId] = useState(null);
+  const [downloadingLetterId, setDownloadingLetterId] = useState(null);
 
   const loadContracts = async () => {
     setLoading(true);
@@ -241,10 +245,14 @@ const Contracts = () => {
 
   const handleOpenPrepareDialog = async (row) => {
     if (row.status !== 'pending_contract') {
+      if (downloadingContractId) return;
+      setDownloadingContractId(row.id);
       try {
         await downloadGeneratedContract(row.id);
       } catch (err) {
         setError(err.response?.data?.message || 'Failed to download generated contract.');
+      } finally {
+        setDownloadingContractId(null);
       }
       return;
     }
@@ -456,10 +464,14 @@ const Contracts = () => {
 
   const handleOpenLetterDialog = async (row) => {
     if (row.generatedLetterFileId) {
+      if (downloadingLetterId) return;
+      setDownloadingLetterId(row.id);
       try {
         await downloadGeneratedLetter(row.id);
       } catch (err) {
         setError(err.response?.data?.message || 'Failed to download generated letter.');
+      } finally {
+        setDownloadingLetterId(null);
       }
       return;
     }
@@ -527,7 +539,7 @@ const Contracts = () => {
   };
 
   return (
-    <LocalizationProvider dateAdapter={AdapterDayjs}>
+    <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="en-gb">
     <Box
       sx={{
         minHeight: '100vh',
@@ -570,7 +582,7 @@ const Contracts = () => {
           <Button
             variant="outlined"
             startIcon={<ArrowBackIcon sx={{ fontSize: 18 }} />}
-            onClick={() => window.open('/onboarding', '_blank', 'noopener,noreferrer')}
+            onClick={() => navigate('/onboarding')}
             sx={{
               borderRadius: '999px',
               fontWeight: 700,
@@ -699,6 +711,7 @@ const Contracts = () => {
                           <Button
                             size="small"
                             variant="contained"
+                            disabled={downloadingContractId === row.id}
                             onClick={() => handleOpenPrepareDialog(row)}
                             sx={{
                               borderRadius: '999px',
@@ -716,15 +729,23 @@ const Contracts = () => {
                               '&:hover': {
                                 background: 'linear-gradient(135deg, #23a19f, #329bc7)',
                               },
+                              '&.Mui-disabled': {
+                                background: 'linear-gradient(135deg, #2bb3b1, #3aaed8)',
+                                opacity: 0.7,
+                                color: '#ffffff',
+                              },
                             }}
                           >
-                            {isNew ? 'Prepare Contract' : 'View Contract'}
+                            {downloadingContractId === row.id ? (
+                              <CircularProgress size={16} sx={{ color: '#fff' }} />
+                            ) : isNew ? 'Prepare Contract' : 'View Contract'}
                           </Button>
 
                           {!isNew && (
                             <Button
                               size="small"
                               variant="outlined"
+                              disabled={downloadingLetterId === row.id}
                               onClick={() => handleOpenLetterDialog(row)}
                               sx={{
                                 borderRadius: '999px',
@@ -744,7 +765,9 @@ const Contracts = () => {
                                 },
                               }}
                             >
-                              {row.generatedLetterFileId ? 'View Letter' : 'Prepare Letter'}
+                              {downloadingLetterId === row.id ? (
+                                <CircularProgress size={16} sx={{ color: '#6a5cff' }} />
+                              ) : row.generatedLetterFileId ? 'View Letter' : 'Prepare Letter'}
                             </Button>
                           )}
 
@@ -886,6 +909,7 @@ const Contracts = () => {
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
             <DatePicker
               label="Agreement Date"
+              format="DD/MM/YYYY"
               value={prepareForm.agreementDate}
               onChange={handlePrepareDateChange('agreementDate')}
               slotProps={{
@@ -901,6 +925,7 @@ const Contracts = () => {
             />
             <DatePicker
               label="Appointment Date"
+              format="DD/MM/YYYY"
               value={prepareForm.appointmentDate}
               onChange={handlePrepareDateChange('appointmentDate')}
               slotProps={{
@@ -1087,6 +1112,7 @@ const Contracts = () => {
               />
               <DatePicker
                 label="Due Date"
+                format="DD/MM/YYYY"
                 value={payment.dueDate}
                 onChange={handlePaymentFieldChange(index, 'dueDate')}
                 slotProps={{
@@ -1096,6 +1122,7 @@ const Contracts = () => {
               />
               <DatePicker
                 label="Paid Date (optional)"
+                format="DD/MM/YYYY"
                 value={payment.paidDate}
                 onChange={handlePaymentFieldChange(index, 'paidDate')}
                 slotProps={{
@@ -1201,6 +1228,7 @@ const Contracts = () => {
 
           <DatePicker
             label="Date"
+            format="DD/MM/YYYY"
             value={letterForm.letterDate}
             onChange={handleLetterDateChange}
             slotProps={{

@@ -46,7 +46,7 @@ export const downloadGeneratedContract = async (contractId) => {
   const response = await api.get(`/contracts/${contractId}/file`, {
     responseType: 'blob',
   });
-  const filename = extractFilename(response, `contract-${contractId}.docx`);
+  const filename = extractFilename(response, `contract-${contractId}.pdf`);
   const blobUrl = URL.createObjectURL(response.data);
 
   const link = document.createElement('a');
