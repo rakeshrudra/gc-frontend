@@ -34,6 +34,7 @@ import PersonAddAlt1Icon from "@mui/icons-material/PersonAddAlt1";
 import DescriptionIcon from "@mui/icons-material/Description";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import SupportAgentIcon from "@mui/icons-material/SupportAgent";
 
 import logo from "../assets/eops-logo.png";
 import vitalityLogo from "../assets/vitality-logo.png";
@@ -51,6 +52,7 @@ const Navbar = ({ onMenuSelect }) => {
     "emedix_admin",
     "emedix_superadmin",
   ].includes(adminRole);
+  const canManageGrievanceMappings = ["emedix_admin", "emedix_superadmin"].includes(adminRole);
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [settingsAnchorEl, setSettingsAnchorEl] = useState(null);
@@ -206,6 +208,76 @@ const Navbar = ({ onMenuSelect }) => {
             />
           </ListItemButton>
         </ListItem>
+
+        {/* RAISE A GRIEVANCE */}
+        {isStoreRole && (
+          <ListItem disablePadding>
+            <ListItemButton onClick={() => handleMenuClick("/grievances/new")}>
+              <ListItemIcon>
+                <SupportAgentIcon sx={{ color: "#0f9f9a" }} />
+              </ListItemIcon>
+
+              <ListItemText
+                primary={
+                  <Typography
+                    sx={{
+                      fontWeight: 600,
+                      fontSize: "0.9rem",
+                    }}
+                  >
+                    Raise a Grievance
+                  </Typography>
+                }
+              />
+            </ListItemButton>
+          </ListItem>
+        )}
+
+        {/* GRIEVANCES */}
+        <ListItem disablePadding>
+          <ListItemButton onClick={() => handleMenuClick("/grievances")}>
+            <ListItemIcon>
+              <SupportAgentIcon sx={{ color: "#0f9f9a" }} />
+            </ListItemIcon>
+
+            <ListItemText
+              primary={
+                <Typography
+                  sx={{
+                    fontWeight: 600,
+                    fontSize: "0.9rem",
+                  }}
+                >
+                  {isStoreRole ? "My Grievances" : "Grievances"}
+                </Typography>
+              }
+            />
+          </ListItemButton>
+        </ListItem>
+
+        {/* STORE-FRM MAPPINGS */}
+        {canManageGrievanceMappings && (
+          <ListItem disablePadding>
+            <ListItemButton onClick={() => handleMenuClick("/store-frm-mappings")}>
+              <ListItemIcon>
+                <PersonAddAlt1Icon sx={{ color: "#0f9f9a" }} />
+              </ListItemIcon>
+
+              <ListItemText
+                primary={
+                  <Typography
+                    sx={{
+                      fontWeight: 600,
+                      fontSize: "0.9rem",
+                    }}
+                  >
+                    Store → FRM Mappings
+                  </Typography>
+                }
+              />
+            </ListItemButton>
+          </ListItem>
+        )}
 
         {/* EXPIRY RETURN */}
         {!isStoreRole && (

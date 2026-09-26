@@ -20,6 +20,10 @@ import ExpiryReturn from './pages/ExpiryReturn';
 import MasterUpload from './pages/MasterUpload';
 import Onboarding from './pages/Onboarding';
 import Contracts from './pages/Contracts';
+import RaiseGrievance from './pages/RaiseGrievance';
+import Grievances from './pages/Grievances';
+import GrievanceDetail from './pages/GrievanceDetail';
+import StoreFrmMappings from './pages/StoreFrmMappings';
 
 const theme = createTheme({
   typography: {
@@ -296,6 +300,86 @@ function App() {
               >
                 <Navbar />
                 <Contracts />
+              </Box>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/grievances/new"
+          element={
+            <ProtectedRoute allowedRoles={['store']}>
+              <Box
+                sx={{
+                  minHeight: '100vh',
+                  background: '#f4fdfc',
+                }}
+              >
+                <Navbar />
+
+                <Container maxWidth="xl" sx={{ py: 3 }}>
+                  <RaiseGrievance />
+                </Container>
+              </Box>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/grievances"
+          element={
+            <ProtectedRoute>
+              <Box
+                sx={{
+                  minHeight: '100vh',
+                  background: '#f4fdfc',
+                }}
+              >
+                <Navbar />
+
+                <Container maxWidth="xl" sx={{ py: 3 }}>
+                  <Grievances />
+                </Container>
+              </Box>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/grievances/:id"
+          element={
+            <ProtectedRoute>
+              <Box
+                sx={{
+                  minHeight: '100vh',
+                  background: '#f4fdfc',
+                }}
+              >
+                <Navbar />
+
+                <Container maxWidth="xl" sx={{ py: 3 }}>
+                  <GrievanceDetail />
+                </Container>
+              </Box>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/store-frm-mappings"
+          element={
+            <ProtectedRoute allowedAdminRoles={['emedix_admin', 'emedix_superadmin']}>
+              <Box
+                sx={{
+                  minHeight: '100vh',
+                  background: '#f4fdfc',
+                }}
+              >
+                <Navbar />
+
+                <Container maxWidth="xl" sx={{ py: 3 }}>
+                  <StoreFrmMappings />
+                </Container>
               </Box>
             </ProtectedRoute>
           }
