@@ -1,4 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Alert,
   Box,
@@ -45,6 +46,21 @@ import {
   updateOnboardingStatus,
 } from '../services/onboarding';
 import { getContractClientIds } from '../services/contracts';
+
+const formatUtcDateTime = (value) => {
+  if (!value) return '';
+  const date = new Date(value);
+  const pad = (n) => String(n).padStart(2, '0');
+  const day = pad(date.getUTCDate());
+  const month = pad(date.getUTCMonth() + 1);
+  const year = date.getUTCFullYear();
+  let hours = date.getUTCHours();
+  const minutes = pad(date.getUTCMinutes());
+  const seconds = pad(date.getUTCSeconds());
+  const ampm = hours >= 12 ? 'pm' : 'am';
+  hours = hours % 12 || 12;
+  return `${day}/${month}/${year}, ${pad(hours)}:${minutes}:${seconds} ${ampm}`;
+};
 
 const columns = [
   { key: 'name', label: 'Name' },
@@ -117,6 +133,7 @@ const renderStatusChip = (status) => {
 
 const Onboarding = () => {
   const { adminRole } = useContext(AuthContext);
+  const navigate = useNavigate();
   const isSalesRole = adminRole === 'emedix_sales';
   const canApprove = ['emedix_op_admin', 'emedix_admin', 'emedix_superadmin'].includes(adminRole);
 
@@ -576,7 +593,7 @@ const Onboarding = () => {
           size="small"
           variant="contained"
           endIcon={<ArrowForwardIcon sx={{ fontSize: 16 }} />}
-          onClick={() => window.open(`/contracts/${row.id}`, '_blank', 'noopener,noreferrer')}
+          onClick={() => navigate(`/contracts/${row.id}`)}
           sx={{
             borderRadius: '999px',
             fontWeight: 600,
@@ -643,7 +660,7 @@ const Onboarding = () => {
             variant="contained"
             startIcon={<DescriptionIcon sx={{ fontSize: 18 }} />}
             endIcon={<ArrowForwardIcon sx={{ fontSize: 16 }} />}
-            onClick={() => window.open('/contracts', '_blank', 'noopener,noreferrer')}
+            onClick={() => navigate('/contracts')}
             sx={{
               borderRadius: '999px',
               fontWeight: 700,
@@ -1145,7 +1162,7 @@ const Onboarding = () => {
                       sx={{ color: palette.color, fontWeight: 600, opacity: 0.85 }}
                     >
                       {item.createdByName} ({item.createdByRole}) —{' '}
-                      {new Date(item.createdAt).toLocaleString()}
+                      {formatUtcDateTime(item.createdAt)}
                     </Typography>
                   </Box>
                 );
