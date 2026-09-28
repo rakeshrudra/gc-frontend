@@ -69,3 +69,8 @@ export const deactivateStoreFrmMapping = async (storeId) => {
   const response = await api.delete(`/store-frm-mappings/${storeId}`);
   return response.data;
 };
+
+export const getFrmAdmins = async () => {
+  const response = await api.get('/admins', { params: { role: 'emedix_op_admin' } });
+  return response.data;
+};

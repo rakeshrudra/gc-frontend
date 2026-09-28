@@ -209,6 +209,28 @@ const Navbar = ({ onMenuSelect }) => {
           </ListItemButton>
         </ListItem>
 
+        {/* GRIEVANCES */}
+        <ListItem disablePadding>
+          <ListItemButton onClick={() => handleMenuClick("/grievances")}>
+            <ListItemIcon>
+              <SupportAgentIcon sx={{ color: "#0f9f9a" }} />
+            </ListItemIcon>
+
+            <ListItemText
+              primary={
+                <Typography
+                  sx={{
+                    fontWeight: 600,
+                    fontSize: "0.9rem",
+                  }}
+                >
+                  {isStoreRole ? "My Grievances" : "Grievances"}
+                </Typography>
+              }
+            />
+          </ListItemButton>
+        </ListItem>
+
         {/* RAISE A GRIEVANCE */}
         {isStoreRole && (
           <ListItem disablePadding>
@@ -232,28 +254,6 @@ const Navbar = ({ onMenuSelect }) => {
             </ListItemButton>
           </ListItem>
         )}
-
-        {/* GRIEVANCES */}
-        <ListItem disablePadding>
-          <ListItemButton onClick={() => handleMenuClick("/grievances")}>
-            <ListItemIcon>
-              <SupportAgentIcon sx={{ color: "#0f9f9a" }} />
-            </ListItemIcon>
-
-            <ListItemText
-              primary={
-                <Typography
-                  sx={{
-                    fontWeight: 600,
-                    fontSize: "0.9rem",
-                  }}
-                >
-                  {isStoreRole ? "My Grievances" : "Grievances"}
-                </Typography>
-              }
-            />
-          </ListItemButton>
-        </ListItem>
 
         {/* STORE-FRM MAPPINGS */}
         {canManageGrievanceMappings && (

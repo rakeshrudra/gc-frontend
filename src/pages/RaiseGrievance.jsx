@@ -26,6 +26,7 @@ import ForwardToInboxIcon from '@mui/icons-material/ForwardToInbox';
 import { AuthContext } from '../context/AuthContext';
 import { getGrievanceTopics, createGrievance } from '../services/grievances';
 
+const DESCRIPTION_MIN_LENGTH = 10;
 const DESCRIPTION_MAX_LENGTH = 4000;
 
 function generateIdempotencyKey() {
@@ -116,8 +117,8 @@ const RaiseGrievance = () => {
     const errors = {};
     if (!topicId) errors.topicId = 'Please select a complaint topic.';
     if (!subtopicId) errors.subtopicId = 'Please select a subtopic.';
-    if (!description.trim()) {
-      errors.description = 'Please describe the issue.';
+    if (description.trim().length < DESCRIPTION_MIN_LENGTH) {
+      errors.description = `Please describe the issue in at least ${DESCRIPTION_MIN_LENGTH} characters.`;
     }
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
@@ -165,12 +166,10 @@ const RaiseGrievance = () => {
     return (
       <Box
         sx={{
-          minHeight: 'calc(100vh - 120px)',
+          minHeight: 'calc(100vh - 220px)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          px: { xs: 2, sm: 3 },
-          py: { xs: 4, sm: 6 },
         }}
       >
         <Grow in timeout={500}>
@@ -236,7 +235,7 @@ const RaiseGrievance = () => {
             <Chip
               label={
                 result.assignedFrmAdminId
-                  ? 'Assigned to your Franchise Relationship Manager'
+                  ? `Assigned to ${result.assignedFrmName ?? 'your Franchise Relationship Manager'}`
                   : 'Pending assignment — Operations has been notified'
               }
               sx={{
@@ -274,11 +273,8 @@ const RaiseGrievance = () => {
   return (
     <Box
       sx={{
-        minHeight: 'calc(100vh - 120px)',
         display: 'flex',
         justifyContent: 'center',
-        px: { xs: 2, sm: 3 },
-        py: { xs: 4, sm: 6 },
       }}
     >
       <Fade in timeout={400}>
@@ -462,15 +458,15 @@ const RaiseGrievance = () => {
               >
                 <FormControlLabel
                   control={<Checkbox checked={ccGm} onChange={(e) => setCcGm(e.target.checked)} />}
-                  label="CC General Manager"
+                  label="Copy to General Manager"
                 />
                 <FormControlLabel
                   control={<Checkbox checked={ccCoo} onChange={(e) => setCcCoo(e.target.checked)} />}
-                  label="CC Chief Operating Officer"
+                  label="Copy to COO (Chief Operating Officer)"
                 />
                 <FormControlLabel
                   control={<Checkbox checked={ccCeo} onChange={(e) => setCcCeo(e.target.checked)} />}
-                  label="CC Chief Executive Officer"
+                  label="Copy to CEO (Chief Executive Officer)"
                 />
               </Stack>
             </Box>

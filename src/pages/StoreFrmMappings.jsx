@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   Alert,
+  Autocomplete,
   Box,
   Button,
   Chip,
@@ -28,14 +29,21 @@ import {
   getStoreFrmMappings,
   upsertStoreFrmMapping,
   deactivateStoreFrmMapping,
+  getFrmAdmins,
 } from '../services/grievances';
+import { getStores } from '../services/processedOrders';
 
-const emptyForm = { storeId: '', frmAdminId: '' };
+const emptyForm = { store: null, frmAdmin: null };
 
 const StoreFrmMappings = () => {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  const [stores, setStores] = useState([]);
+  const [frmAdmins, setFrmAdmins] = useState([]);
+  const [optionsLoading, setOptionsLoading] = useState(true);
+  const [optionsError, setOptionsError] = useState('');
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
@@ -66,20 +74,44 @@ const StoreFrmMappings = () => {
     };
   }, [refreshKey]);
 
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setOptionsLoading(true);
+      setOptionsError('');
+      try {
+        const [storesData, frmAdminsData] = await Promise.all([getStores(), getFrmAdmins()]);
+        if (!cancelled) {
+          setStores(storesData ?? []);
+          setFrmAdmins(frmAdminsData ?? []);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setOptionsError(err.response?.data?.message || 'Failed to load stores/FRMs.');
+        }
+      } finally {
+        if (!cancelled) setOptionsLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     setFormError('');
 
-    if (!form.storeId || !form.frmAdminId) {
-      setFormError('Both Store ID and FRM Admin ID are required.');
+    if (!form.store || !form.frmAdmin) {
+      setFormError('Please select both a store and an FRM.');
       return;
     }
 
     setSubmitting(true);
     try {
       await upsertStoreFrmMapping({
-        storeId: Number(form.storeId),
-        frmAdminId: Number(form.frmAdminId),
+        storeId: form.store.id,
+        frmAdminId: form.frmAdmin.id,
       });
       setDialogOpen(false);
       setForm(emptyForm);
@@ -101,8 +133,14 @@ const StoreFrmMappings = () => {
   };
 
   return (
-    <Box sx={{ py: 3 }}>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+    <Box>
+      <Stack
+        direction="row"
+        justifyContent="space-between"
+        alignItems="center"
+        flexWrap="wrap"
+        sx={{ mb: 2, rowGap: 1.5, columnGap: 3 }}
+      >
         <Stack direction="row" spacing={1.5} alignItems="center">
           <AssignmentIndIcon sx={{ color: '#0f9f9a', fontSize: 30 }} />
           <Typography sx={{ fontSize: '1.4rem', fontWeight: 900, color: '#007f7a' }}>
@@ -193,23 +231,31 @@ const StoreFrmMappings = () => {
                 {formError}
               </Alert>
             )}
+            {optionsError && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {optionsError}
+              </Alert>
+            )}
             <Stack spacing={2}>
-              <TextField
-                label="Store ID"
-                type="number"
-                value={form.storeId}
-                onChange={(e) => setForm((prev) => ({ ...prev, storeId: e.target.value }))}
-                fullWidth
-                required
+              <Autocomplete
+                options={stores}
+                value={form.store}
+                onChange={(_e, value) => setForm((prev) => ({ ...prev, store: value }))}
+                getOptionLabel={(option) => option.storeName ?? ''}
+                isOptionEqualToValue={(option, value) => option.id === value.id}
+                loading={optionsLoading}
+                renderInput={(params) => <TextField {...params} label="Store" required />}
               />
-              <TextField
-                label="FRM Admin ID"
-                type="number"
-                value={form.frmAdminId}
-                onChange={(e) => setForm((prev) => ({ ...prev, frmAdminId: e.target.value }))}
-                fullWidth
-                required
-                helperText="Must belong to an admin with the FRM (emedix_op_admin) role"
+              <Autocomplete
+                options={frmAdmins}
+                value={form.frmAdmin}
+                onChange={(_e, value) => setForm((prev) => ({ ...prev, frmAdmin: value }))}
+                getOptionLabel={(option) => option.username ?? ''}
+                isOptionEqualToValue={(option, value) => option.id === value.id}
+                loading={optionsLoading}
+                renderInput={(params) => (
+                  <TextField {...params} label="FRM" required helperText="Only admins with the FRM role are listed" />
+                )}
               />
             </Stack>
           </DialogContent>

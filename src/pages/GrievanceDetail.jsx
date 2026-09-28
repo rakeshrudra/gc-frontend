@@ -2,6 +2,7 @@ import React, { useContext, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   Alert,
+  Autocomplete,
   Avatar,
   Box,
   Button,
@@ -25,6 +26,10 @@ import LockIcon from '@mui/icons-material/Lock';
 import ForumIcon from '@mui/icons-material/Forum';
 import HistoryIcon from '@mui/icons-material/History';
 import SendIcon from '@mui/icons-material/Send';
+import FlagIcon from '@mui/icons-material/Flag';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
+import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
+import AutorenewIcon from '@mui/icons-material/Autorenew';
 import { AuthContext } from '../context/AuthContext';
 import {
   getGrievance,
@@ -32,13 +37,14 @@ import {
   getGrievanceHistory,
   addGrievanceComment,
   updateGrievanceStatus,
+  reassignGrievance,
+  getFrmAdmins,
 } from '../services/grievances';
 import { getGrievanceStatusColor, getGrievanceStatusLabel } from '../utils/grievanceStatus';
 
 const MANAGER_ROLES = ['emedix_admin', 'emedix_superadmin'];
 
 const NEXT_STATUS_OPTIONS = {
-  new: ['assigned'],
   assigned: ['acknowledged'],
   acknowledged: ['in_progress', 'waiting_for_requester', 'escalated'],
   in_progress: ['waiting_for_requester', 'escalated', 'resolved'],
@@ -49,7 +55,30 @@ const NEXT_STATUS_OPTIONS = {
   reopened: ['in_progress'],
 };
 
+function historyEventVisual(event) {
+  if (event.eventType === 'created') {
+    return { icon: <FlagIcon sx={{ fontSize: 16 }} />, bg: '#0f9f9a', fg: '#ffffff' };
+  }
+  if (event.eventType === 'assigned') {
+    return { icon: <PersonAddIcon sx={{ fontSize: 16 }} />, bg: '#1565c0', fg: '#ffffff' };
+  }
+  if (event.eventType === 'reassigned') {
+    return { icon: <SwapHorizIcon sx={{ fontSize: 16 }} />, bg: '#8e24aa', fg: '#ffffff' };
+  }
+  if (event.eventType === 'status_changed') {
+    const color = getGrievanceStatusColor(event.newValue);
+    return { icon: <AutorenewIcon sx={{ fontSize: 16 }} />, bg: color.fg, fg: '#ffffff' };
+  }
+  return { icon: <FlagIcon sx={{ fontSize: 16 }} />, bg: '#5a6b73', fg: '#ffffff' };
+}
+
 const JOURNEY_STEPS = ['new', 'assigned', 'acknowledged', 'in_progress', 'resolved', 'closed'];
+
+const SIDE_TRACK_PARENT = {
+  waiting_for_requester: 'in_progress',
+  escalated: 'in_progress',
+  reopened: 'resolved',
+};
 
 function initialsOf(name) {
   if (!name) return '?';
@@ -58,54 +87,113 @@ function initialsOf(name) {
 }
 
 const StatusJourney = ({ status }) => {
-  const activeIndex = JOURNEY_STEPS.indexOf(status);
-  const isSideTrack = activeIndex === -1;
+  const sideTrackParent = SIDE_TRACK_PARENT[status];
+  const isSideTrack = Boolean(sideTrackParent);
+  const mainStatus = isSideTrack ? sideTrackParent : status;
+  const activeIndex = JOURNEY_STEPS.indexOf(mainStatus);
+  const stepCount = JOURNEY_STEPS.length;
+  const firstDotPercent = 50 / stepCount;
+  const lastDotPercent = 100 - firstDotPercent;
+  const activeDotPercent = activeIndex === -1 ? firstDotPercent : ((activeIndex + 0.5) / stepCount) * 100;
+  const sideTrackColor = getGrievanceStatusColor(status);
 
   return (
-    <Stack direction="row" alignItems="center" sx={{ overflowX: 'auto', py: 0.5 }}>
-      {JOURNEY_STEPS.map((step, index) => {
-        const reached = !isSideTrack && index <= activeIndex;
-        const isCurrent = !isSideTrack && index === activeIndex;
-        return (
-          <React.Fragment key={step}>
-            {index > 0 && (
+    <Box sx={{ overflowX: 'auto', py: 0.5 }}>
+      <Box sx={{ position: 'relative', minWidth: stepCount * 84, pt: isSideTrack ? 4 : 0 }}>
+        {isSideTrack && (
+          <Box
+            sx={{
+              position: 'absolute',
+              top: 0,
+              left: `${activeDotPercent}%`,
+              transform: 'translateX(-50%)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+            }}
+          >
+            <Chip
+              size="small"
+              label={getGrievanceStatusLabel(status)}
+              sx={{
+                backgroundColor: sideTrackColor.bg,
+                color: sideTrackColor.fg,
+                fontWeight: 800,
+                height: 22,
+                mb: '2px',
+              }}
+            />
+            <Box sx={{ width: 2, height: 12, backgroundColor: sideTrackColor.fg, opacity: 0.5 }} />
+          </Box>
+        )}
+
+        <Stack direction="row" sx={{ position: 'relative' }}>
+          <Box
+            sx={{
+              position: 'absolute',
+              top: 10,
+              left: `${firstDotPercent}%`,
+              right: `${100 - lastDotPercent}%`,
+              height: 3,
+              borderRadius: 3,
+              backgroundColor: '#e0e0e0',
+              transform: 'translateY(-50%)',
+            }}
+          />
+          <Box
+            sx={{
+              position: 'absolute',
+              top: 10,
+              left: `${firstDotPercent}%`,
+              width: `${activeDotPercent - firstDotPercent}%`,
+              height: 3,
+              borderRadius: 3,
+              backgroundColor: '#0f9f9a',
+              transform: 'translateY(-50%)',
+              transition: 'width 0.3s ease',
+            }}
+          />
+
+          {JOURNEY_STEPS.map((step, index) => {
+            const reached = index <= activeIndex;
+            const isCurrent = !isSideTrack && index === activeIndex;
+            return (
               <Box
-                sx={{
-                  height: 2,
-                  flex: 1,
-                  minWidth: 24,
-                  backgroundColor: reached ? '#0f9f9a' : '#e0e0e0',
-                  transition: 'background-color 0.3s ease',
-                }}
-              />
-            )}
-            <Stack alignItems="center" spacing={0.5} sx={{ minWidth: 68 }}>
-              <Box
-                sx={{
-                  width: isCurrent ? 16 : 12,
-                  height: isCurrent ? 16 : 12,
-                  borderRadius: '50%',
-                  backgroundColor: reached ? '#0f9f9a' : '#e0e0e0',
-                  border: isCurrent ? '3px solid #a8d8d3' : 'none',
-                  boxShadow: isCurrent ? '0 0 0 4px rgba(15,159,154,0.15)' : 'none',
-                  transition: 'all 0.3s ease',
-                }}
-              />
-              <Typography
-                sx={{
-                  fontSize: '0.68rem',
-                  fontWeight: isCurrent ? 800 : 600,
-                  color: reached ? '#0c7f7b' : '#5a6b73',
-                  whiteSpace: 'nowrap',
-                }}
+                key={step}
+                sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, minWidth: 0 }}
               >
-                {getGrievanceStatusLabel(step)}
-              </Typography>
-            </Stack>
-          </React.Fragment>
-        );
-      })}
-    </Stack>
+                <Box sx={{ height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                  <Box
+                    sx={{
+                      width: isCurrent ? 16 : 14,
+                      height: isCurrent ? 16 : 14,
+                      borderRadius: '50%',
+                      backgroundColor: reached ? '#0f9f9a' : '#e0e0e0',
+                      boxShadow: isCurrent ? '0 0 0 6px rgba(15,159,154,0.3)' : 'none',
+                      transition: 'all 0.3s ease',
+                      flexShrink: 0,
+                      zIndex: 1,
+                    }}
+                  />
+                </Box>
+                <Typography
+                  sx={{
+                    fontSize: '0.72rem',
+                    fontWeight: isCurrent ? 800 : 600,
+                    color: reached ? '#0c7f7b' : '#5a6b73',
+                    whiteSpace: 'nowrap',
+                    mt: 1,
+                    textAlign: 'center',
+                  }}
+                >
+                  {getGrievanceStatusLabel(step)}
+                </Typography>
+              </Box>
+            );
+          })}
+        </Stack>
+      </Box>
+    </Box>
   );
 };
 
@@ -131,6 +219,14 @@ const GrievanceDetail = () => {
   const [statusNote, setStatusNote] = useState('');
   const [statusSubmitting, setStatusSubmitting] = useState(false);
   const [statusError, setStatusError] = useState('');
+
+  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+  const [assignFrm, setAssignFrm] = useState(null);
+  const [assignReason, setAssignReason] = useState('');
+  const [assignSubmitting, setAssignSubmitting] = useState(false);
+  const [assignError, setAssignError] = useState('');
+  const [frmAdmins, setFrmAdmins] = useState([]);
+  const [frmAdminsLoading, setFrmAdminsLoading] = useState(false);
 
   const [refreshKey, setRefreshKey] = useState(0);
   const refresh = () => setRefreshKey((prev) => prev + 1);
@@ -215,6 +311,45 @@ const GrievanceDetail = () => {
     }
   };
 
+  const openAssignDialog = async () => {
+    setAssignFrm(null);
+    setAssignReason('');
+    setAssignError('');
+    setAssignDialogOpen(true);
+
+    setFrmAdminsLoading(true);
+    try {
+      const data = await getFrmAdmins();
+      setFrmAdmins(data ?? []);
+    } catch {
+      setAssignError('Failed to load FRM list.');
+    } finally {
+      setFrmAdminsLoading(false);
+    }
+  };
+
+  const handleAssignSubmit = async () => {
+    if (!assignFrm) {
+      setAssignError('Please select an FRM.');
+      return;
+    }
+
+    setAssignSubmitting(true);
+    setAssignError('');
+    try {
+      await reassignGrievance(id, {
+        newFrmAdminId: assignFrm.id,
+        reason: assignReason.trim() || undefined,
+      });
+      setAssignDialogOpen(false);
+      refresh();
+    } catch (err) {
+      setAssignError(err.response?.data?.message || 'Failed to assign this ticket.');
+    } finally {
+      setAssignSubmitting(false);
+    }
+  };
+
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', py: 10 }}>
@@ -225,7 +360,7 @@ const GrievanceDetail = () => {
 
   if (error || !grievance) {
     return (
-      <Box sx={{ py: 3, maxWidth: 900, mx: 'auto' }}>
+      <Box sx={{ maxWidth: 900, mx: 'auto' }}>
         <Alert severity="error" sx={{ borderRadius: 2 }}>{error || 'Grievance not found.'}</Alert>
       </Box>
     );
@@ -234,15 +369,17 @@ const GrievanceDetail = () => {
   const color = getGrievanceStatusColor(grievance.status);
   const nextStatuses = NEXT_STATUS_OPTIONS[grievance.status] ?? [];
   const visibleNextStatuses = nextStatuses.filter((next) => {
-    if (!isStaff) {
-      return grievance.status === 'resolved' && (next === 'closed' || next === 'reopened');
+    const isCloseOrReopen = next === 'closed' || next === 'reopened';
+    if (isCloseOrReopen) {
+      return !isStaff;
     }
-    return true;
+    return isStaff;
   });
+  const canAssign = isManager && !grievance.assignedFrmAdminId;
 
   return (
     <Fade in timeout={350}>
-      <Box sx={{ py: 3, maxWidth: 900, mx: 'auto' }}>
+      <Box sx={{ maxWidth: 900, mx: 'auto' }}>
         <Button startIcon={<ArrowBackIcon />} onClick={() => navigate('/grievances')} sx={{ mb: 2, color: '#0f9f9a', fontWeight: 700 }}>
           Back to Grievances
         </Button>
@@ -269,8 +406,33 @@ const GrievanceDetail = () => {
           </Stack>
 
           <Typography sx={{ fontSize: '0.8rem', color: '#5a6b73', mt: 0.5 }}>
+            {grievance.storeName && (
+              <Typography component="span" sx={{ fontSize: '0.8rem', color: '#0c7f7b', fontWeight: 800 }}>
+                {grievance.storeName}
+              </Typography>
+            )}
+            {grievance.storeName && ' · '}
             Submitted {new Date(grievance.createdAt).toLocaleString()}
           </Typography>
+
+          <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1.5 }}>
+            <Typography sx={{ fontSize: '0.8rem', color: '#5a6b73', fontWeight: 700 }}>
+              Assigned to:
+            </Typography>
+            {grievance.assignedFrmName ? (
+              <Chip
+                size="small"
+                label={grievance.assignedFrmName}
+                sx={{ backgroundColor: '#e0f7f5', color: '#0c7f7b', fontWeight: 700 }}
+              />
+            ) : (
+              <Chip
+                size="small"
+                label="Unassigned"
+                sx={{ backgroundColor: '#fff4e5', color: '#946200', fontWeight: 700 }}
+              />
+            )}
+          </Stack>
 
           <Box sx={{ my: 2.5 }}>
             <StatusJourney status={grievance.status} />
@@ -296,10 +458,25 @@ const GrievanceDetail = () => {
             </Box>
           )}
 
-          {visibleNextStatuses.length > 0 && (
+          {(visibleNextStatuses.length > 0 || canAssign) && (
             <>
               <Divider sx={{ my: 2 }} />
               <Stack direction="row" spacing={1.5} flexWrap="wrap" useFlexGap>
+                {canAssign && (
+                  <Button
+                    variant="contained"
+                    size="small"
+                    onClick={openAssignDialog}
+                    sx={{
+                      backgroundColor: '#0f9f9a',
+                      fontWeight: 700,
+                      borderRadius: 2,
+                      '&:hover': { backgroundColor: '#0c827e' },
+                    }}
+                  >
+                    Assign to FRM
+                  </Button>
+                )}
                 {visibleNextStatuses.map((next) => (
                   <Button
                     key={next}
@@ -449,34 +626,59 @@ const GrievanceDetail = () => {
             {history.length === 0 && (
               <Typography sx={{ color: '#5a6b73', fontSize: '0.85rem' }}>No activity recorded yet.</Typography>
             )}
-            {history.map((event, index) => (
-              <Stack key={event.id} direction="row" spacing={1.5}>
-                <Stack alignItems="center" sx={{ pt: 0.5 }}>
-                  <Box sx={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#0f9f9a', flexShrink: 0 }} />
-                  {index < history.length - 1 && (
-                    <Box sx={{ width: 2, flex: 1, backgroundColor: '#a8d8d3', minHeight: 24, my: 0.25 }} />
-                  )}
-                </Stack>
-                <Box sx={{ pb: 2, flex: 1 }}>
-                  <Stack direction="row" justifyContent="space-between" alignItems="baseline" spacing={2} flexWrap="wrap">
-                    <Typography sx={{ fontSize: '0.85rem', color: '#37474f' }}>
+            {history.map((event, index) => {
+              const visual = historyEventVisual(event);
+              return (
+                <Stack key={event.id} direction="row" spacing={1.75}>
+                  <Box sx={{ width: 22, display: 'flex', flexDirection: 'column', alignItems: 'center', pt: 0.25 }}>
+                    <Box
+                      sx={{
+                        width: 22,
+                        height: 22,
+                        borderRadius: '50%',
+                        backgroundColor: visual.bg,
+                        color: visual.fg,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: `0 3px 8px ${visual.bg}55`,
+                        flexShrink: 0,
+                        '& svg': { fontSize: 13 },
+                      }}
+                    >
+                      {visual.icon}
+                    </Box>
+                    {index < history.length - 1 && (
+                      <Box sx={{ width: 2, flex: 1, backgroundColor: '#d3e6e3', minHeight: 28, mt: 0.5 }} />
+                    )}
+                  </Box>
+                  <Box
+                    sx={{
+                      pb: 2.5,
+                      flex: 1,
+                      minWidth: 0,
+                      mt: 0.25,
+                    }}
+                  >
+                    <Typography sx={{ fontSize: '0.85rem', color: '#37474f', lineHeight: 1.5 }}>
                       <strong>{event.actorName}</strong>{' '}
                       {event.eventType === 'created' && 'raised this ticket'}
-                      {event.eventType === 'assigned' && `assigned it to FRM #${event.newValue}`}
+                      {event.eventType === 'assigned' &&
+                        `assigned it to ${event.newValueName ?? `FRM #${event.newValue}`}`}
                       {event.eventType === 'reassigned' &&
-                        `reassigned it from FRM #${event.oldValue ?? '—'} to FRM #${event.newValue}${
-                          isManager && event.reason ? ` — ${event.reason}` : ''
-                        }`}
+                        `reassigned it from ${event.oldValueName ?? `FRM #${event.oldValue ?? '—'}`} to ${
+                          event.newValueName ?? `FRM #${event.newValue}`
+                        }${isManager && event.reason ? ` — ${event.reason}` : ''}`}
                       {event.eventType === 'status_changed' &&
                         `changed status from ${getGrievanceStatusLabel(event.oldValue)} to ${getGrievanceStatusLabel(event.newValue)}`}
                     </Typography>
-                    <Typography sx={{ fontSize: '0.72rem', color: '#5a6b73', whiteSpace: 'nowrap' }}>
+                    <Typography sx={{ fontSize: '0.72rem', color: '#5a6b73', mt: 0.25 }}>
                       {new Date(event.createdAt).toLocaleString()}
                     </Typography>
-                  </Stack>
-                </Box>
-              </Stack>
-            ))}
+                  </Box>
+                </Stack>
+              );
+            })}
           </Stack>
         </Paper>
 
@@ -522,6 +724,57 @@ const GrievanceDetail = () => {
               variant="contained"
               onClick={handleStatusSubmit}
               disabled={statusSubmitting}
+              sx={{ backgroundColor: '#0f9f9a', '&:hover': { backgroundColor: '#0c827e' }, borderRadius: 2 }}
+            >
+              Confirm
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        <Dialog
+          open={assignDialogOpen}
+          onClose={() => setAssignDialogOpen(false)}
+          fullWidth
+          maxWidth="sm"
+          PaperProps={{ sx: { borderRadius: 4 } }}
+        >
+          <DialogTitle sx={{ fontWeight: 800, color: '#113b4a' }}>Assign to FRM</DialogTitle>
+          <DialogContent>
+            {assignError && (
+              <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
+                {assignError}
+              </Alert>
+            )}
+            <Stack spacing={2}>
+              <Autocomplete
+                options={frmAdmins}
+                value={assignFrm}
+                onChange={(_e, value) => setAssignFrm(value)}
+                getOptionLabel={(option) => option.username ?? ''}
+                isOptionEqualToValue={(option, value) => option.id === value.id}
+                loading={frmAdminsLoading}
+                renderInput={(params) => (
+                  <TextField {...params} label="FRM" autoFocus required helperText="Only admins with the FRM role are listed" />
+                )}
+              />
+              <TextField
+                label="Note (optional)"
+                value={assignReason}
+                onChange={(e) => setAssignReason(e.target.value)}
+                multiline
+                minRows={2}
+                fullWidth
+              />
+            </Stack>
+          </DialogContent>
+          <DialogActions sx={{ px: 3, pb: 2.5 }}>
+            <Button onClick={() => setAssignDialogOpen(false)} sx={{ color: '#5a6b73' }}>
+              Cancel
+            </Button>
+            <Button
+              variant="contained"
+              onClick={handleAssignSubmit}
+              disabled={assignSubmitting}
               sx={{ backgroundColor: '#0f9f9a', '&:hover': { backgroundColor: '#0c827e' }, borderRadius: 2 }}
             >
               Confirm

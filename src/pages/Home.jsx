@@ -17,12 +17,16 @@ import SearchIcon from '@mui/icons-material/Search';
 import TableChartIcon from '@mui/icons-material/TableChart';
 import SupportAgentIcon from '@mui/icons-material/SupportAgent';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import AssignmentReturnIcon from '@mui/icons-material/AssignmentReturn';
+import PersonAddAlt1Icon from '@mui/icons-material/PersonAddAlt1';
+import DescriptionIcon from '@mui/icons-material/Description';
 import { AuthContext } from '../context/AuthContext';
 import { getGrievances } from '../services/grievances';
 
 const OPEN_STATUSES = ['new', 'assigned', 'acknowledged', 'in_progress', 'waiting_for_requester', 'escalated'];
 const FRM_ADMIN_ROLE = 'emedix_op_admin';
 const MANAGER_ADMIN_ROLES = ['emedix_admin', 'emedix_superadmin'];
+const ONBOARDING_ROLES = ['emedix_sales', 'emedix_op_admin', 'emedix_admin', 'emedix_superadmin'];
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -36,8 +40,7 @@ const ActionCard = ({ icon, iconBg, iconColor, title, description, onClick, badg
     <Card
       elevation={0}
       sx={{
-        flex: 1,
-        minWidth: 0,
+        height: '100%',
         borderRadius: 4,
         border: '1px solid #a8d8d3',
         backgroundColor: '#ffffff',
@@ -97,7 +100,7 @@ const ActionCard = ({ icon, iconBg, iconColor, title, description, onClick, badg
   </Grow>
 );
 
-const HeroHeader = ({ greeting, subtitle }) => (
+const HeroHeader = ({ greeting, subtitle, sideTop, sideBottom }) => (
   <Fade in timeout={500}>
     <Box
       sx={{
@@ -133,26 +136,56 @@ const HeroHeader = ({ greeting, subtitle }) => (
         }}
       />
 
-      <Typography
-        sx={{
-          fontSize: { xs: '1.5rem', sm: '1.9rem' },
-          fontWeight: 900,
-          color: '#ffffff',
-          position: 'relative',
-        }}
-      >
-        {greeting}
-      </Typography>
-      <Typography
-        sx={{
-          fontSize: { xs: '0.88rem', sm: '0.95rem' },
-          color: 'rgba(255,255,255,0.85)',
-          mt: 0.5,
-          position: 'relative',
-        }}
-      >
-        {subtitle}
-      </Typography>
+      <Stack direction="row" alignItems="flex-start" sx={{ position: 'relative' }}>
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Typography
+            sx={{
+              fontSize: { xs: '1.5rem', sm: '1.9rem' },
+              fontWeight: 900,
+              color: '#ffffff',
+            }}
+          >
+            {greeting}
+          </Typography>
+          <Typography
+            sx={{
+              fontSize: { xs: '0.88rem', sm: '0.95rem' },
+              color: 'rgba(255,255,255,0.85)',
+              mt: 0.5,
+            }}
+          >
+            {subtitle}
+          </Typography>
+        </Box>
+
+        {sideTop && (
+          <Box sx={{ flexShrink: 0, ml: 2, textAlign: 'right' }}>
+            <Typography
+              sx={{
+                fontSize: { xs: '1.5rem', sm: '1.9rem' },
+                fontWeight: 900,
+                color: '#ffffff',
+                textTransform: 'uppercase',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {sideTop}
+            </Typography>
+            {sideBottom && (
+              <Typography
+                sx={{
+                  fontSize: { xs: '0.88rem', sm: '0.95rem' },
+                  color: 'rgba(255,255,255,0.85)',
+                  mt: 0.5,
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {sideBottom}
+              </Typography>
+            )}
+          </Box>
+        )}
+      </Stack>
     </Box>
   </Fade>
 );
@@ -164,6 +197,7 @@ const Home = () => {
 
   const isFrm = adminRole === FRM_ADMIN_ROLE;
   const isManager = MANAGER_ADMIN_ROLES.includes(adminRole);
+  const canAccessOnboarding = ONBOARDING_ROLES.includes(adminRole);
   const grievanceScope = role === 'store' ? 'mine' : isFrm ? 'assigned' : isManager ? 'unassigned' : null;
 
   useEffect(() => {
@@ -194,14 +228,18 @@ const Home = () => {
       <Box sx={{ px: { xs: 2, sm: 3 }, py: { xs: 3, sm: 4 }, maxWidth: 1100, mx: 'auto' }}>
         <HeroHeader
           greeting={greeting}
-          subtitle={
-            storeUser?.store_name
-              ? `${storeUser.store_name} — manage your orders and grievances from one place.`
-              : 'Manage your orders and grievances from one place.'
-          }
+          subtitle="Manage your orders and grievances from one place."
+          sideTop={storeUser?.store_name}
+          sideBottom={storeUser?.role}
         />
 
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2.5}>
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+            gap: 2.5,
+          }}
+        >
           <ActionCard
             icon={<TableChartIcon />}
             iconBg="#f3e5f5"
@@ -213,24 +251,44 @@ const Home = () => {
           />
           <ActionCard
             icon={<SupportAgentIcon />}
+            iconBg="#fff3e0"
+            iconColor="#ef6c00"
+            title="My Grievances"
+            description="Track the status of grievances you've raised."
+            onClick={() => navigate('/grievances')}
+            badgeCount={openGrievanceCount}
+            delay={100}
+          />
+          <ActionCard
+            icon={<SupportAgentIcon />}
             iconBg="#e0f7f5"
             iconColor="#0f9f9a"
             title="Raise a Grievance"
             description="Report a store-related issue and track it to resolution."
             onClick={() => navigate('/grievances/new')}
-            badgeCount={openGrievanceCount}
-            delay={100}
+            delay={200}
           />
-        </Stack>
+        </Box>
       </Box>
     );
   }
 
   return (
-    <Box sx={{ px: { xs: 2, sm: 3 }, py: { xs: 3, sm: 4 }, maxWidth: 1100, mx: 'auto' }}>
-      <HeroHeader greeting={greeting} subtitle="Click a card below to get started, or use the menu in the top left." />
+    <Box sx={{ px: { xs: 2, sm: 3 }, py: { xs: 3, sm: 4 }, maxWidth: 1400, mx: 'auto' }}>
+      <HeroHeader
+        greeting={greeting}
+        subtitle="Click a card below to get started, or use the menu in the top left."
+        sideTop={adminRole}
+        sideBottom="Emedix Team"
+      />
 
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2.5}>
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+          gap: 2.5,
+        }}
+      >
         <ActionCard
           icon={<UploadFileIcon />}
           iconBg="#e0f2f1"
@@ -241,13 +299,13 @@ const Home = () => {
           delay={0}
         />
         <ActionCard
-          icon={<SearchIcon />}
-          iconBg="#e3f2fd"
-          iconColor="#1565c0"
-          title="Search Medicines & Vendors"
-          description="Search master data and view vendor bill, date, and discount."
-          onClick={() => navigate('/medicine-vendor-search')}
-          delay={100}
+          icon={<TableChartIcon />}
+          iconBg="#f3e5f5"
+          iconColor="#8e24aa"
+          title="Processed Orders"
+          description="View and update the status of store orders."
+          onClick={() => navigate('/processed-orders')}
+          delay={50}
         />
         <ActionCard
           icon={<SupportAgentIcon />}
@@ -257,9 +315,58 @@ const Home = () => {
           description="Review and act on grievances assigned to you."
           onClick={() => navigate('/grievances')}
           badgeCount={openGrievanceCount}
+          delay={100}
+        />
+        <ActionCard
+          icon={<AssignmentReturnIcon />}
+          iconBg="#e0f2f1"
+          iconColor="#0f9f9a"
+          title="Expiry Return"
+          description="Manage expiry return requests."
+          onClick={() => navigate('/expiry-return')}
           delay={200}
         />
-      </Stack>
+        <ActionCard
+          icon={<UploadFileIcon />}
+          iconBg="#e0f2f1"
+          iconColor="#0f9f9a"
+          title="Master Upload"
+          description="Upload and manage master medicine data."
+          onClick={() => navigate('/master-upload')}
+          delay={250}
+        />
+        {canAccessOnboarding && (
+          <>
+            <ActionCard
+              icon={<PersonAddAlt1Icon />}
+              iconBg="#e0f7f5"
+              iconColor="#0c7f7b"
+              title="Onboarding Clients"
+              description="View and manage prospective franchise clients."
+              onClick={() => navigate('/onboarding')}
+              delay={300}
+            />
+            <ActionCard
+              icon={<DescriptionIcon />}
+              iconBg="#e0f7f5"
+              iconColor="#0c7f7b"
+              title="Contracts"
+              description="Prepare and track franchise contracts."
+              onClick={() => navigate('/contracts')}
+              delay={350}
+            />
+          </>
+        )}
+        <ActionCard
+          icon={<SearchIcon />}
+          iconBg="#e3f2fd"
+          iconColor="#1565c0"
+          title="Search Medicines & Vendors"
+          description="Search master data and view vendor bill, date, and discount."
+          onClick={() => navigate('/medicine-vendor-search')}
+          delay={400}
+        />
+      </Box>
 
       <Typography sx={{ mt: 3, fontSize: '0.82rem', color: '#5a6b73', textAlign: 'center' }}>
         The menu has the same options anytime.

@@ -4,6 +4,7 @@ import {
   Alert,
   Avatar,
   Box,
+  Button,
   Chip,
   CircularProgress,
   Fade,
@@ -23,6 +24,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
 import SupportAgentIcon from '@mui/icons-material/SupportAgent';
 import InboxIcon from '@mui/icons-material/Inbox';
@@ -45,7 +47,6 @@ const Grievances = () => {
       return [
         { value: 'all', label: 'All Tickets' },
         { value: 'unassigned', label: 'Unassigned' },
-        { value: 'assigned', label: 'Assigned to Me' },
       ];
     }
     if (isFrm) return [{ value: 'assigned', label: 'Assigned to Me' }];
@@ -95,17 +96,41 @@ const Grievances = () => {
 
   return (
     <Fade in timeout={350}>
-      <Box sx={{ py: 3, maxWidth: 1100, mx: 'auto' }}>
-        <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 3 }}>
-          <Avatar sx={{ backgroundColor: '#e0f7f5', color: '#0c7f7b', width: 44, height: 44 }}>
-            <SupportAgentIcon />
-          </Avatar>
-          <Box>
-            <Typography sx={{ fontSize: '1.4rem', fontWeight: 900, color: '#113b4a' }}>Grievances</Typography>
-            <Typography sx={{ fontSize: '0.82rem', color: '#5a6b73' }}>
-              {total} ticket{total === 1 ? '' : 's'} in this view
-            </Typography>
-          </Box>
+      <Box sx={{ maxWidth: 1300, mx: 'auto' }}>
+        <Stack
+          direction="row"
+          justifyContent="space-between"
+          alignItems="center"
+          flexWrap="wrap"
+          sx={{ mb: 3, rowGap: 1.5, columnGap: 3 }}
+        >
+          <Stack direction="row" spacing={1.5} alignItems="center">
+            <Avatar sx={{ backgroundColor: '#e0f7f5', color: '#0c7f7b', width: 44, height: 44 }}>
+              <SupportAgentIcon />
+            </Avatar>
+            <Box>
+              <Typography sx={{ fontSize: '1.4rem', fontWeight: 900, color: '#113b4a' }}>Grievances</Typography>
+              <Typography sx={{ fontSize: '0.82rem', color: '#5a6b73' }}>
+                {total} ticket{total === 1 ? '' : 's'} in this view
+              </Typography>
+            </Box>
+          </Stack>
+
+          {role === 'store' && (
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => navigate('/grievances/new')}
+              sx={{
+                background: 'linear-gradient(135deg, #0f9f9a 0%, #0c7f7b 100%)',
+                '&:hover': { background: 'linear-gradient(135deg, #0c8f8a 0%, #0a6b68 100%)' },
+                fontWeight: 700,
+                borderRadius: 2,
+              }}
+            >
+              Raise Ticket
+            </Button>
+          )}
         </Stack>
 
         <Paper
@@ -135,7 +160,7 @@ const Grievances = () => {
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ p: 2, backgroundColor: '#fbfffe' }}>
             <TextField
               size="small"
-              placeholder="Search ticket number or description"
+              placeholder="Search by ticket number"
               value={searchInput}
               onChange={(e) => {
                 setSearchInput(e.target.value);
@@ -182,7 +207,10 @@ const Grievances = () => {
               <TableHead>
                 <TableRow sx={{ '& th': { backgroundColor: '#f4fbfa', fontWeight: 800, color: '#0c7f7b', borderBottom: 'none' } }}>
                   <TableCell>Ticket No.</TableCell>
+                  {role !== 'store' && <TableCell>Store</TableCell>}
+                  <TableCell>Topic / Subtopic</TableCell>
                   <TableCell>Status</TableCell>
+                  <TableCell>Assigned FRM</TableCell>
                   <TableCell>Created</TableCell>
                   <TableCell align="right" />
                 </TableRow>
@@ -190,13 +218,13 @@ const Grievances = () => {
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={4} align="center" sx={{ py: 6, border: 'none' }}>
+                    <TableCell colSpan={7} align="center" sx={{ py: 6, border: 'none' }}>
                       <CircularProgress size={28} sx={{ color: '#0f9f9a' }} />
                     </TableCell>
                   </TableRow>
                 ) : rows.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={4} align="center" sx={{ py: 7, border: 'none' }}>
+                    <TableCell colSpan={7} align="center" sx={{ py: 7, border: 'none' }}>
                       <Stack alignItems="center" spacing={1}>
                         <InboxIcon sx={{ fontSize: 40, color: '#cfd8dc' }} />
                         <Typography sx={{ color: '#5a6b73', fontSize: '0.9rem' }}>
@@ -221,12 +249,30 @@ const Grievances = () => {
                         }}
                       >
                         <TableCell sx={{ fontWeight: 700, color: '#113b4a' }}>{row.ticketNumber}</TableCell>
+                        {role !== 'store' && (
+                          <TableCell sx={{ color: '#37474f' }}>{row.storeName ?? `Store #${row.storeId}`}</TableCell>
+                        )}
+                        <TableCell sx={{ color: '#37474f' }}>
+                          <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: '#113b4a' }}>
+                            {row.topicName ?? `Topic #${row.topicId}`}
+                          </Typography>
+                          <Typography sx={{ fontSize: '0.78rem', color: '#5a6b73' }}>
+                            {row.subtopicName ?? `Subtopic #${row.subtopicId}`}
+                          </Typography>
+                        </TableCell>
                         <TableCell>
                           <Chip
                             size="small"
                             label={getGrievanceStatusLabel(row.status)}
                             sx={{ backgroundColor: color.bg, color: color.fg, fontWeight: 700 }}
                           />
+                        </TableCell>
+                        <TableCell sx={{ color: '#37474f' }}>
+                          {row.assignedFrmName ?? (
+                            <Typography component="span" sx={{ fontSize: '0.8rem', color: '#946200', fontWeight: 700 }}>
+                              Unassigned
+                            </Typography>
+                          )}
                         </TableCell>
                         <TableCell sx={{ color: '#5a6b73' }}>{new Date(row.createdAt).toLocaleString()}</TableCell>
                         <TableCell align="right">
