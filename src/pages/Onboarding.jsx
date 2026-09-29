@@ -172,6 +172,8 @@ const Onboarding = () => {
   const [siteVisitCase, setSiteVisitCase] = useState(null);
   const [siteVisitRemark, setSiteVisitRemark] = useState('');
   const [siteVisitPhoto, setSiteVisitPhoto] = useState(null);
+  const [siteVisitFormFront, setSiteVisitFormFront] = useState(null);
+  const [siteVisitFormBack, setSiteVisitFormBack] = useState(null);
   const [siteVisitError, setSiteVisitError] = useState('');
 
   const [remarksCase, setRemarksCase] = useState(null);
@@ -423,10 +425,12 @@ const Onboarding = () => {
     setSiteVisitCase(null);
     setSiteVisitRemark('');
     setSiteVisitPhoto(null);
+    setSiteVisitFormFront(null);
+    setSiteVisitFormBack(null);
     setSiteVisitError('');
   };
 
-  const handleSiteVisitPhotoChange = (event) => {
+  const handleSiteVisitFileChange = (setter) => (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -441,12 +445,26 @@ const Onboarding = () => {
     }
 
     setSiteVisitError('');
-    setSiteVisitPhoto(file);
+    setter(file);
   };
+
+  const handleSiteVisitPhotoChange = handleSiteVisitFileChange(setSiteVisitPhoto);
+  const handleSiteVisitFormFrontChange = handleSiteVisitFileChange(setSiteVisitFormFront);
+  const handleSiteVisitFormBackChange = handleSiteVisitFileChange(setSiteVisitFormBack);
 
   const handleConfirmSiteVisit = async () => {
     if (!siteVisitRemark.trim()) {
       setSiteVisitError('A remark is required to mark the site visit as done.');
+      return;
+    }
+
+    if (!siteVisitPhoto) {
+      setSiteVisitError('Images/documents are required to mark the site visit as done.');
+      return;
+    }
+
+    if (!siteVisitFormFront || !siteVisitFormBack) {
+      setSiteVisitError('Both the front and back of the form are required to mark the site visit as done.');
       return;
     }
 
@@ -460,11 +478,15 @@ const Onboarding = () => {
         'site_visit_done',
         siteVisitRemark.trim(),
         siteVisitPhoto,
+        siteVisitFormFront,
+        siteVisitFormBack,
       );
       setRows((prev) => prev.map((row) => (row.id === id ? updated : row)));
       setSiteVisitCase(null);
       setSiteVisitRemark('');
       setSiteVisitPhoto(null);
+      setSiteVisitFormFront(null);
+      setSiteVisitFormBack(null);
     } catch (err) {
       setSiteVisitError(err.response?.data?.message || 'Failed to update status.');
     } finally {
@@ -1065,10 +1087,13 @@ const Onboarding = () => {
           >
             <AddAPhotoIcon sx={{ fontSize: 64, color: siteVisitPhoto ? '#2bb3b1' : '#94a3b8' }} />
             <Typography sx={{ fontWeight: 700, color: siteVisitPhoto ? '#2bb3b1' : '#546e7a' }}>
-              {siteVisitPhoto ? siteVisitPhoto.name : 'Click to upload a photo (optional)'}
+              {siteVisitPhoto ? siteVisitPhoto.name : 'Click to upload a photo *'}
             </Typography>
             <Typography variant="caption" sx={{ color: '#94a3b8' }}>
               JPEG or PNG, up to 5MB
+            </Typography>
+            <Typography variant="caption" sx={{ color: '#c2410c', fontWeight: 600 }}>
+              Please upload an image with geotag
             </Typography>
             <input
               type="file"
@@ -1077,6 +1102,74 @@ const Onboarding = () => {
               onChange={handleSiteVisitPhotoChange}
             />
           </Box>
+
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+            <Box
+              component="label"
+              sx={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 0.5,
+                p: 2,
+                border: '2px dashed',
+                borderColor: siteVisitFormFront ? '#2bb3b1' : '#cbd5e1',
+                borderRadius: '12px',
+                cursor: 'pointer',
+                backgroundColor: siteVisitFormFront ? 'rgba(43,179,177,0.06)' : 'rgba(0,0,0,0.01)',
+                textAlign: 'center',
+              }}
+            >
+              <AddAPhotoIcon sx={{ fontSize: 32, color: siteVisitFormFront ? '#2bb3b1' : '#94a3b8' }} />
+              <Typography
+                variant="body2"
+                sx={{ fontWeight: 700, color: siteVisitFormFront ? '#2bb3b1' : '#546e7a' }}
+              >
+                {siteVisitFormFront ? siteVisitFormFront.name : 'Form — Front Side *'}
+              </Typography>
+              <input
+                type="file"
+                accept="image/jpeg,image/png"
+                hidden
+                onChange={handleSiteVisitFormFrontChange}
+              />
+            </Box>
+
+            <Box
+              component="label"
+              sx={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 0.5,
+                p: 2,
+                border: '2px dashed',
+                borderColor: siteVisitFormBack ? '#2bb3b1' : '#cbd5e1',
+                borderRadius: '12px',
+                cursor: 'pointer',
+                backgroundColor: siteVisitFormBack ? 'rgba(43,179,177,0.06)' : 'rgba(0,0,0,0.01)',
+                textAlign: 'center',
+              }}
+            >
+              <AddAPhotoIcon sx={{ fontSize: 32, color: siteVisitFormBack ? '#2bb3b1' : '#94a3b8' }} />
+              <Typography
+                variant="body2"
+                sx={{ fontWeight: 700, color: siteVisitFormBack ? '#2bb3b1' : '#546e7a' }}
+              >
+                {siteVisitFormBack ? siteVisitFormBack.name : 'Form — Back Side *'}
+              </Typography>
+              <input
+                type="file"
+                accept="image/jpeg,image/png"
+                hidden
+                onChange={handleSiteVisitFormBackChange}
+              />
+            </Box>
+          </Stack>
 
           <TextField
             label="Remark"

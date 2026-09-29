@@ -46,6 +46,7 @@ import {
 } from '../services/contracts';
 import { sendPhoneOtp, confirmPhoneOtp, resetRecaptcha } from '../services/phoneOtp';
 import { getReadableOtpError } from '../utils/otpError';
+import { getOnboardingCase } from '../services/onboarding';
 
 const emptyForm = { remark: '', aadhaar: null, pan: null };
 
@@ -112,6 +113,14 @@ const Contracts = () => {
   const [form, setForm] = useState(emptyForm);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
+  const [clientMobileNo, setClientMobileNo] = useState('');
+
+  const [clientOtpDialogOpen, setClientOtpDialogOpen] = useState(false);
+  const [clientOtpValue, setClientOtpValue] = useState('');
+  const [clientOtpConfirmation, setClientOtpConfirmation] = useState(null);
+  const [clientOtpSending, setClientOtpSending] = useState(false);
+  const [clientOtpVerifying, setClientOtpVerifying] = useState(false);
+  const [clientOtpError, setClientOtpError] = useState('');
 
   const [prepareDialogRow, setPrepareDialogRow] = useState(null);
   const [prepareForm, setPrepareForm] = useState(emptyPrepareForm);
@@ -192,6 +201,15 @@ const Contracts = () => {
       } catch {
         // Non-critical: fall through without auto-opening the dialog.
       }
+
+      try {
+        const onboardingCase = await getOnboardingCase(clientId);
+        if (!cancelled) {
+          setClientMobileNo(onboardingCase?.mobileNo || '');
+        }
+      } catch {
+        // Non-critical: OTP send will surface an error if the number is missing.
+      }
     })();
 
     return () => {
@@ -213,7 +231,7 @@ const Contracts = () => {
   };
 
   const handleCloseDialog = () => {
-    if (submitting) return;
+    if (submitting || clientOtpSending) return;
     setDialogOpen(false);
   };
 
@@ -230,10 +248,69 @@ const Contracts = () => {
       return;
     }
 
-    setSubmitting(true);
+    if (!form.aadhaar || !form.pan) {
+      setFormError('Both Aadhaar and PAN documents are required.');
+      return;
+    }
+
+    if (!clientMobileNo) {
+      setFormError("The client's registered mobile number could not be found.");
+      return;
+    }
+
+    setClientOtpError('');
+    setClientOtpValue('');
+    setClientOtpSending(true);
 
     try {
-      await createContract(clientId, form);
+      const confirmation = await sendPhoneOtp(clientMobileNo, 'client-otp-recaptcha');
+      setClientOtpConfirmation(confirmation);
+      setClientOtpDialogOpen(true);
+    } catch (err) {
+      setFormError(getReadableOtpError(err));
+      resetRecaptcha();
+    } finally {
+      setClientOtpSending(false);
+    }
+  };
+
+  const handleCloseClientOtpDialog = () => {
+    if (clientOtpVerifying) return;
+    setClientOtpDialogOpen(false);
+    setClientOtpConfirmation(null);
+    setClientOtpValue('');
+    setClientOtpError('');
+  };
+
+  const handleVerifyClientOtpAndCreate = async () => {
+    setClientOtpError('');
+
+    if (!clientOtpValue.trim()) {
+      setClientOtpError("Please enter the OTP sent to the client's mobile number.");
+      return;
+    }
+
+    setClientOtpVerifying(true);
+
+    let otpToken;
+    try {
+      otpToken = await confirmPhoneOtp(clientOtpConfirmation, clientOtpValue.trim());
+    } catch (err) {
+      setClientOtpError(getReadableOtpError(err));
+      setClientOtpVerifying(false);
+      return;
+    }
+
+    setClientOtpDialogOpen(false);
+    setClientOtpConfirmation(null);
+    setClientOtpValue('');
+    setClientOtpVerifying(false);
+
+    setSubmitting(true);
+    setFormError('');
+
+    try {
+      await createContract(clientId, { ...form, client_otp_token: otpToken });
       await loadContracts();
       setDialogOpen(false);
     } catch (err) {
@@ -832,7 +909,7 @@ const Contracts = () => {
               color: form.aadhaar ? '#6a5cff' : '#5a5580',
             }}
           >
-            {form.aadhaar ? form.aadhaar.name : 'Upload Aadhaar Card'}
+            {form.aadhaar ? form.aadhaar.name : 'Upload Aadhaar Card *'}
             <input
               type="file"
               accept="image/jpeg,image/png,application/pdf"
@@ -853,7 +930,7 @@ const Contracts = () => {
               color: form.pan ? '#6a5cff' : '#5a5580',
             }}
           >
-            {form.pan ? form.pan.name : 'Upload PAN Card'}
+            {form.pan ? form.pan.name : 'Upload PAN Card *'}
             <input
               type="file"
               accept="image/jpeg,image/png,application/pdf"
@@ -874,13 +951,13 @@ const Contracts = () => {
         </DialogContent>
 
         <DialogActions sx={{ p: 2 }}>
-          <Button onClick={handleCloseDialog} disabled={submitting}>
+          <Button onClick={handleCloseDialog} disabled={submitting || clientOtpSending}>
             Cancel
           </Button>
           <Button
             variant="contained"
             onClick={handleSubmit}
-            disabled={submitting}
+            disabled={submitting || clientOtpSending}
             sx={{
               borderRadius: '10px',
               textTransform: 'none',
@@ -888,7 +965,60 @@ const Contracts = () => {
               background: 'linear-gradient(135deg, #6a5cff, #8f7bff)',
             }}
           >
-            {submitting ? <CircularProgress size={18} sx={{ color: '#fff' }} /> : 'Submit'}
+            {submitting || clientOtpSending ? (
+              <CircularProgress size={18} sx={{ color: '#fff' }} />
+            ) : (
+              'Submit'
+            )}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <div id="client-otp-recaptcha" />
+
+      <Dialog open={clientOtpDialogOpen} onClose={handleCloseClientOtpDialog} fullWidth maxWidth="xs">
+        <DialogTitle sx={{ fontWeight: 700, color: '#2b2560' }}>
+          Verify Client Consent
+        </DialogTitle>
+
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: '20px !important' }}>
+          {clientOtpError && <Alert severity="error">{clientOtpError}</Alert>}
+
+          <Typography variant="body2" sx={{ color: '#5a5580' }}>
+            An OTP has been sent to the client's mobile number ending in{' '}
+            {clientMobileNo ? clientMobileNo.slice(-4) : '----'}. Ask the client for the code and
+            enter it below to confirm their consent and generate their contract.
+          </Typography>
+
+          <TextField
+            label="OTP"
+            value={clientOtpValue}
+            onChange={(event) => setClientOtpValue(event.target.value)}
+            fullWidth
+            autoFocus
+          />
+        </DialogContent>
+
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={handleCloseClientOtpDialog} disabled={clientOtpVerifying}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleVerifyClientOtpAndCreate}
+            disabled={clientOtpVerifying}
+            sx={{
+              borderRadius: '10px',
+              textTransform: 'none',
+              fontWeight: 700,
+              background: 'linear-gradient(135deg, #6a5cff, #8f7bff)',
+            }}
+          >
+            {clientOtpVerifying ? (
+              <CircularProgress size={18} sx={{ color: '#fff' }} />
+            ) : (
+              'Verify & Generate'
+            )}
           </Button>
         </DialogActions>
       </Dialog>

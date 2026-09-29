@@ -12,9 +12,10 @@ export const getContractClientIds = async () => {
   return response.data;
 };
 
-export const createContract = async (clientId, { remark, aadhaar, pan }) => {
+export const createContract = async (clientId, { remark, aadhaar, pan, client_otp_token }) => {
   const formData = new FormData();
   formData.append('remark', remark);
+  formData.append('client_otp_token', client_otp_token);
   if (aadhaar) formData.append('aadhaar', aadhaar);
   if (pan) formData.append('pan', pan);
 
