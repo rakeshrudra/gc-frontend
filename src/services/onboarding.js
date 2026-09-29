@@ -12,12 +12,19 @@ export const getOnboardingCases = async ({ page = 1, limit = 25, search = '' } =
   return response.data;
 };
 
-export const updateOnboardingStatus = async (id, status, remark, photo) => {
-  if (photo) {
+export const getOnboardingCase = async (id) => {
+  const response = await api.get(`/onboarding/${id}`);
+  return response.data;
+};
+
+export const updateOnboardingStatus = async (id, status, remark, photo, formFront, formBack) => {
+  if (photo || formFront || formBack) {
     const formData = new FormData();
     formData.append('status', status);
     if (remark) formData.append('remark', remark);
-    formData.append('photo', photo);
+    if (photo) formData.append('photo', photo);
+    if (formFront) formData.append('formFront', formFront);
+    if (formBack) formData.append('formBack', formBack);
 
     const response = await api.patch(`/onboarding/${id}/status`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
