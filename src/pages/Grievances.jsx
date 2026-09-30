@@ -39,19 +39,17 @@ const Grievances = () => {
   const navigate = useNavigate();
   const { role, adminRole } = useContext(AuthContext);
   const isManager = MANAGER_ROLES.includes(adminRole);
-  const isFrm = adminRole === 'emedix_op_admin';
 
   const scopeTabs = useMemo(() => {
-    if (role === 'store') return [{ value: 'mine', label: 'My Tickets' }];
-    if (isManager) {
+    if (role !== 'store' && isManager) {
       return [
         { value: 'all', label: 'All Tickets' },
         { value: 'unassigned', label: 'Unassigned' },
+        { value: 'assigned', label: 'Assigned to Me' },
       ];
     }
-    if (isFrm) return [{ value: 'assigned', label: 'Assigned to Me' }];
-    return [{ value: 'mine', label: 'Tickets' }];
-  }, [role, isManager, isFrm]);
+    return [{ value: 'mine', label: 'My Tickets' }];
+  }, [role, isManager]);
 
   const [scope, setScope] = useState(scopeTabs[0]?.value ?? 'mine');
   const [status, setStatus] = useState('');
@@ -210,7 +208,7 @@ const Grievances = () => {
                   {role !== 'store' && <TableCell>Store</TableCell>}
                   <TableCell>Topic / Subtopic</TableCell>
                   <TableCell>Status</TableCell>
-                  <TableCell>Assigned FRM</TableCell>
+                  <TableCell>Assigned To</TableCell>
                   <TableCell>Created</TableCell>
                   <TableCell align="right" />
                 </TableRow>
@@ -218,19 +216,24 @@ const Grievances = () => {
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={7} align="center" sx={{ py: 6, border: 'none' }}>
-                      <CircularProgress size={28} sx={{ color: '#0f9f9a' }} />
+                    <TableCell colSpan={7} sx={{ py: 6, border: 'none' }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                        <CircularProgress size={28} sx={{ color: '#0f9f9a' }} />
+                      </Box>
                     </TableCell>
                   </TableRow>
                 ) : rows.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} align="center" sx={{ py: 7, border: 'none' }}>
-                      <Stack alignItems="center" spacing={1}>
-                        <InboxIcon sx={{ fontSize: 40, color: '#cfd8dc' }} />
-                        <Typography sx={{ color: '#5a6b73', fontSize: '0.9rem' }}>
-                          No grievances found for this view.
+                    <TableCell colSpan={7} sx={{ py: 7, border: 'none' }}>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+                        <InboxIcon sx={{ fontSize: 48, color: '#8a9997' }} />
+                        <Typography sx={{ color: '#113b4a', fontWeight: 700, fontSize: '0.95rem' }}>
+                          No grievances found
                         </Typography>
-                      </Stack>
+                        <Typography sx={{ color: '#5a6b73', fontSize: '0.85rem' }}>
+                          There is nothing to show in this view yet.
+                        </Typography>
+                      </Box>
                     </TableCell>
                   </TableRow>
                 ) : (

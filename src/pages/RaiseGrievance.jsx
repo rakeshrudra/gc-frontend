@@ -343,7 +343,7 @@ const RaiseGrievance = () => {
               />
               <TextField
                 label="Store"
-                value={storeUser?.store_name ?? ''}
+                value={storeUser?.store_display_name ?? storeUser?.store_name ?? ''}
                 fullWidth
                 size="small"
                 slotProps={{ input: { readOnly: true } }}

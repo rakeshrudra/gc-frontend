@@ -24,7 +24,6 @@ import { AuthContext } from '../context/AuthContext';
 import { getGrievances } from '../services/grievances';
 
 const OPEN_STATUSES = ['new', 'assigned', 'acknowledged', 'in_progress', 'waiting_for_requester', 'escalated'];
-const FRM_ADMIN_ROLE = 'emedix_op_admin';
 const MANAGER_ADMIN_ROLES = ['emedix_admin', 'emedix_superadmin'];
 const ONBOARDING_ROLES = ['emedix_sales', 'emedix_op_admin', 'emedix_admin', 'emedix_superadmin'];
 
@@ -195,10 +194,9 @@ const Home = () => {
   const { role, adminRole, storeUser, admin } = useContext(AuthContext);
   const [openGrievanceCount, setOpenGrievanceCount] = useState(0);
 
-  const isFrm = adminRole === FRM_ADMIN_ROLE;
   const isManager = MANAGER_ADMIN_ROLES.includes(adminRole);
   const canAccessOnboarding = ONBOARDING_ROLES.includes(adminRole);
-  const grievanceScope = role === 'store' ? 'mine' : isFrm ? 'assigned' : isManager ? 'unassigned' : null;
+  const grievanceScope = isManager ? 'unassigned' : 'mine';
 
   useEffect(() => {
     let cancelled = false;
@@ -229,7 +227,7 @@ const Home = () => {
         <HeroHeader
           greeting={greeting}
           subtitle="Manage your orders and grievances from one place."
-          sideTop={storeUser?.store_name}
+          sideTop={storeUser?.store_display_name ?? storeUser?.store_name}
           sideBottom={storeUser?.role}
         />
 

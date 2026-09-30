@@ -38,7 +38,7 @@ import {
   addGrievanceComment,
   updateGrievanceStatus,
   reassignGrievance,
-  getFrmAdmins,
+  getAssignees,
 } from '../services/grievances';
 import { getGrievanceStatusColor, getGrievanceStatusLabel } from '../utils/grievanceStatus';
 
@@ -200,7 +200,7 @@ const StatusJourney = ({ status }) => {
 const GrievanceDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { role, adminRole } = useContext(AuthContext);
+  const { role, adminRole, admin } = useContext(AuthContext);
   const isStaff = role === 'admin';
   const isManager = MANAGER_ROLES.includes(adminRole);
 
@@ -221,12 +221,13 @@ const GrievanceDetail = () => {
   const [statusError, setStatusError] = useState('');
 
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
-  const [assignFrm, setAssignFrm] = useState(null);
+  const [assignTarget, setAssignTarget] = useState(null);
   const [assignReason, setAssignReason] = useState('');
   const [assignSubmitting, setAssignSubmitting] = useState(false);
   const [assignError, setAssignError] = useState('');
-  const [frmAdmins, setFrmAdmins] = useState([]);
-  const [frmAdminsLoading, setFrmAdminsLoading] = useState(false);
+  const [assignees, setAssignees] = useState([]);
+  const [assigneesLoading, setAssigneesLoading] = useState(false);
+  const [assignNotice, setAssignNotice] = useState([]);
 
   const [refreshKey, setRefreshKey] = useState(0);
   const refresh = () => setRefreshKey((prev) => prev + 1);
@@ -312,37 +313,57 @@ const GrievanceDetail = () => {
   };
 
   const openAssignDialog = async () => {
-    setAssignFrm(null);
+    setAssignTarget(null);
     setAssignReason('');
     setAssignError('');
+    setAssignNotice([]);
     setAssignDialogOpen(true);
 
-    setFrmAdminsLoading(true);
+    setAssigneesLoading(true);
     try {
-      const data = await getFrmAdmins();
-      setFrmAdmins(data ?? []);
+      const data = await getAssignees();
+      setAssignees((data ?? []).filter((person) => person.id !== grievance?.assignedFrmAdminId));
     } catch {
-      setAssignError('Failed to load FRM list.');
+      setAssignError('Failed to load the list of people.');
     } finally {
-      setFrmAdminsLoading(false);
+      setAssigneesLoading(false);
+    }
+  };
+
+  const finishAssign = () => {
+    setAssignDialogOpen(false);
+    setAssignNotice([]);
+    if (isManager || assignTarget?.id === admin?.id) {
+      refresh();
+    } else {
+      navigate('/grievances');
     }
   };
 
   const handleAssignSubmit = async () => {
-    if (!assignFrm) {
-      setAssignError('Please select an FRM.');
+    if (!assignTarget) {
+      setAssignError('Please select who to assign this ticket to.');
+      return;
+    }
+
+    const isReassignment = Boolean(grievance?.assignedFrmAdminId);
+    if (isReassignment && assignReason.trim().length < 10) {
+      setAssignError('Please provide a reason of at least 10 characters for reassigning.');
       return;
     }
 
     setAssignSubmitting(true);
     setAssignError('');
     try {
-      await reassignGrievance(id, {
-        newFrmAdminId: assignFrm.id,
+      const result = await reassignGrievance(id, {
+        newFrmAdminId: assignTarget.id,
         reason: assignReason.trim() || undefined,
       });
-      setAssignDialogOpen(false);
-      refresh();
+      if (result?.emailWarnings?.length) {
+        setAssignNotice(result.emailWarnings);
+      } else {
+        finishAssign();
+      }
     } catch (err) {
       setAssignError(err.response?.data?.message || 'Failed to assign this ticket.');
     } finally {
@@ -375,7 +396,8 @@ const GrievanceDetail = () => {
     }
     return isStaff;
   });
-  const canAssign = isManager && !grievance.assignedFrmAdminId;
+  const canAssign = isStaff;
+  const isReassignment = Boolean(grievance.assignedFrmAdminId);
 
   return (
     <Fade in timeout={350}>
@@ -474,7 +496,7 @@ const GrievanceDetail = () => {
                       '&:hover': { backgroundColor: '#0c827e' },
                     }}
                   >
-                    Assign to FRM
+                    {isReassignment ? 'Reassign' : 'Assign'}
                   </Button>
                 )}
                 {visibleNextStatuses.map((next) => (
@@ -733,52 +755,89 @@ const GrievanceDetail = () => {
 
         <Dialog
           open={assignDialogOpen}
-          onClose={() => setAssignDialogOpen(false)}
+          onClose={assignNotice.length ? finishAssign : () => setAssignDialogOpen(false)}
           fullWidth
           maxWidth="sm"
           PaperProps={{ sx: { borderRadius: 4 } }}
         >
-          <DialogTitle sx={{ fontWeight: 800, color: '#113b4a' }}>Assign to FRM</DialogTitle>
+          <DialogTitle sx={{ fontWeight: 800, color: '#113b4a' }}>
+            {assignNotice.length ? 'Ticket Assigned' : isReassignment ? 'Reassign Ticket' : 'Assign Ticket'}
+          </DialogTitle>
           <DialogContent>
-            {assignError && (
+            {assignNotice.length > 0 && (
+              <Alert severity="warning" sx={{ borderRadius: 2 }}>
+                <Typography sx={{ fontWeight: 700, mb: 0.5 }}>
+                  The ticket was assigned, but an email could not be sent.
+                </Typography>
+                {assignNotice.map((notice) => (
+                  <Typography key={notice} sx={{ fontSize: '0.9rem' }}>{notice}</Typography>
+                ))}
+                <Typography sx={{ fontSize: '0.9rem', mt: 0.5 }}>
+                  Please inform them directly or add their email in the admin records.
+                </Typography>
+              </Alert>
+            )}
+            {!assignNotice.length && assignError && (
               <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
                 {assignError}
               </Alert>
             )}
+            {!assignNotice.length && (
             <Stack spacing={2}>
               <Autocomplete
-                options={frmAdmins}
-                value={assignFrm}
-                onChange={(_e, value) => setAssignFrm(value)}
-                getOptionLabel={(option) => option.username ?? ''}
+                options={assignees}
+                value={assignTarget}
+                onChange={(_e, value) => setAssignTarget(value)}
+                getOptionLabel={(option) =>
+                  option.username ? `${option.username} (${option.role})${option.hasEmail ? '' : ' - no email'}` : ''
+                }
                 isOptionEqualToValue={(option, value) => option.id === value.id}
-                loading={frmAdminsLoading}
+                loading={assigneesLoading}
                 renderInput={(params) => (
-                  <TextField {...params} label="FRM" autoFocus required helperText="Only admins with the FRM role are listed" />
+                  <TextField {...params} label="Assign to" autoFocus required helperText={
+                      assignTarget && !assignTarget.hasEmail
+                        ? 'This person has no email on file and will not be notified by email'
+                        : 'Any Emedix team member can be selected'
+                    }
+                  />
                 )}
               />
               <TextField
-                label="Note (optional)"
+                label={isReassignment ? 'Reason' : 'Note (optional)'}
                 value={assignReason}
                 onChange={(e) => setAssignReason(e.target.value)}
                 multiline
-                minRows={2}
+                minRows={isReassignment ? 3 : 2}
                 fullWidth
+                required={isReassignment}
               />
             </Stack>
+            )}
           </DialogContent>
           <DialogActions sx={{ px: 3, pb: 2.5 }}>
-            <Button onClick={() => setAssignDialogOpen(false)} sx={{ color: '#5a6b73' }}>
-              Cancel
-            </Button>
-            <Button
-              variant="contained"
-              onClick={handleAssignSubmit}
-              disabled={assignSubmitting}
-              sx={{ backgroundColor: '#0f9f9a', '&:hover': { backgroundColor: '#0c827e' }, borderRadius: 2 }}
-            >
-              Confirm
-            </Button>
+            {assignNotice.length ? (
+              <Button
+                variant="contained"
+                onClick={finishAssign}
+                sx={{ backgroundColor: '#0f9f9a', '&:hover': { backgroundColor: '#0c827e' }, borderRadius: 2 }}
+              >
+                OK
+              </Button>
+            ) : (
+              <>
+                <Button onClick={() => setAssignDialogOpen(false)} sx={{ color: '#5a6b73' }}>
+                  Cancel
+                </Button>
+                <Button
+                  variant="contained"
+                  onClick={handleAssignSubmit}
+                  disabled={assignSubmitting}
+                  sx={{ backgroundColor: '#0f9f9a', '&:hover': { backgroundColor: '#0c827e' }, borderRadius: 2 }}
+                >
+                  Confirm
+                </Button>
+              </>
+            )}
           </DialogActions>
         </Dialog>
       </Box>
