@@ -65,12 +65,7 @@ export const upsertStoreFrmMapping = async ({ storeId, frmAdminId }) => {
   return response.data;
 };
 
-export const deactivateStoreFrmMapping = async (storeId) => {
-  const response = await api.delete(`/store-frm-mappings/${storeId}`);
-  return response.data;
-};
-
-export const getFrmAdmins = async () => {
-  const response = await api.get('/admins', { params: { role: 'emedix_op_admin' } });
+export const getAssignees = async ({ role } = {}) => {
+  const response = await api.get('/grievances/assignees', { params: { role: role || undefined } });
   return response.data;
 };

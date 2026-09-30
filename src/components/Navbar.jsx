@@ -506,11 +506,15 @@ const Navbar = ({ onMenuSelect }) => {
           <img
             src={logo}
             alt="EOPS Logo"
+            onClick={handleHomeClick}
+            role="button"
+            aria-label="Go to home"
             style={{
               width: 105,
               maxHeight: 38,
               objectFit: "contain",
               marginRight: 12,
+              cursor: "pointer",
             }}
           />
 
