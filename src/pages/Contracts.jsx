@@ -478,30 +478,7 @@ const Contracts = () => {
     setOtpError('');
   };
 
-  const handleVerifyOtpAndGenerate = async () => {
-    setOtpError('');
-
-    if (!otpValue.trim()) {
-      setOtpError('Please enter the OTP sent to your mobile number.');
-      return;
-    }
-
-    setOtpVerifying(true);
-
-    let otpToken;
-    try {
-      otpToken = await confirmPhoneOtp(otpConfirmation, otpValue.trim());
-    } catch (err) {
-      setOtpError(getReadableOtpError(err));
-      setOtpVerifying(false);
-      return;
-    }
-
-    setOtpDialogOpen(false);
-    setOtpConfirmation(null);
-    setOtpValue('');
-    setOtpVerifying(false);
-
+  const submitPrepareContract = async (otpToken) => {
     setPreparing(true);
     setPrepareError('');
 
@@ -537,6 +514,33 @@ const Contracts = () => {
     } finally {
       setPreparing(false);
     }
+  };
+
+  const handleVerifyOtpAndGenerate = async () => {
+    setOtpError('');
+
+    if (!otpValue.trim()) {
+      setOtpError('Please enter the OTP sent to your mobile number.');
+      return;
+    }
+
+    setOtpVerifying(true);
+
+    let otpToken;
+    try {
+      otpToken = await confirmPhoneOtp(otpConfirmation, otpValue.trim());
+    } catch (err) {
+      setOtpError(getReadableOtpError(err));
+      setOtpVerifying(false);
+      return;
+    }
+
+    setOtpDialogOpen(false);
+    setOtpConfirmation(null);
+    setOtpValue('');
+    setOtpVerifying(false);
+
+    await submitPrepareContract(otpToken);
   };
 
   const handleOpenLetterDialog = async (row) => {
