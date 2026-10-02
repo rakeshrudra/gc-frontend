@@ -46,6 +46,7 @@ import {
   updateOnboardingStatus,
 } from '../services/onboarding';
 import { getContractClientIds } from '../services/contracts';
+import { getAdmins } from '../services/admins';
 
 const formatUtcDateTime = (value) => {
   if (!value) return '';
@@ -80,6 +81,7 @@ const emptyForm = {
   email: '',
   location: '',
   details: '',
+  assignedAdminId: '',
 };
 
 const statusLabels = {
@@ -87,6 +89,7 @@ const statusLabels = {
   approved: 'Approved',
   declined: 'Declined',
   site_visit_done: 'Site Visit Done',
+  pending_contract: 'Moved to Contract',
   cancelled: 'Cancelled',
 };
 
@@ -95,6 +98,7 @@ const statusColors = {
   approved: { bg: '#d4edda', color: '#1e7e34' },
   declined: { bg: '#f8d7da', color: '#a71d2a' },
   site_visit_done: { bg: '#d6e4ff', color: '#1d4fa7' },
+  pending_contract: { bg: '#e0d9ff', color: '#5b3fd6' },
   cancelled: { bg: '#eceff1', color: '#455a64' },
 };
 
@@ -152,6 +156,7 @@ const Onboarding = () => {
   const [form, setForm] = useState(emptyForm);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
+  const [emedixAdmins, setEmedixAdmins] = useState([]);
 
   const [statusUpdatingId, setStatusUpdatingId] = useState(null);
 
@@ -214,6 +219,12 @@ const Onboarding = () => {
   }, [page, rowsPerPage, search]);
 
   useEffect(() => {
+    getAdmins('emedix_admin')
+      .then(setEmedixAdmins)
+      .catch(() => setEmedixAdmins([]));
+  }, []);
+
+  useEffect(() => {
     const timeoutId = setTimeout(() => {
       setPage(0);
       setSearch(searchInput.trim());
@@ -249,9 +260,10 @@ const Onboarding = () => {
       !form.city.trim() ||
       !form.mobileNo.trim() ||
       !form.email.trim() ||
-      !form.location.trim()
+      !form.location.trim() ||
+      !form.assignedAdminId
     ) {
-      setFormError('Name, city, mobile number, email and location are required.');
+      setFormError('Name, city, mobile number, email, location and assigned admin are required.');
       return;
     }
 
@@ -275,6 +287,7 @@ const Onboarding = () => {
         email: form.email.trim(),
         location: form.location.trim(),
         details: form.details.trim() || undefined,
+        assignedAdminId: Number(form.assignedAdminId),
       });
 
       setRows((prev) => [created, ...prev]);
@@ -916,6 +929,21 @@ const Onboarding = () => {
             fullWidth
             required
           />
+
+          <TextField
+            select
+            label="Assign Admin"
+            value={form.assignedAdminId}
+            onChange={handleFieldChange('assignedAdminId')}
+            fullWidth
+            required
+          >
+            {emedixAdmins.map((admin) => (
+              <MenuItem key={admin.id} value={admin.id}>
+                {admin.username}
+              </MenuItem>
+            ))}
+          </TextField>
 
           <TextField
             label="Details"
