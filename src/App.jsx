@@ -24,6 +24,8 @@ import RaiseGrievance from './pages/RaiseGrievance';
 import Grievances from './pages/Grievances';
 import GrievanceDetail from './pages/GrievanceDetail';
 import StoreFrmMappings from './pages/StoreFrmMappings';
+import Employees from './pages/Employees';
+import EmployeeForm from './pages/EmployeeForm';
 
 const theme = createTheme({
   typography: {
@@ -379,6 +381,66 @@ function App() {
 
                 <Container maxWidth="xl" sx={{ py: 3 }}>
                   <StoreFrmMappings />
+                </Container>
+              </Box>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/employees"
+          element={
+            <ProtectedRoute allowedAdminRoles={['emedix_hr']}>
+              <Box
+                sx={{
+                  minHeight: '100vh',
+                  background: '#f4fdfc',
+                }}
+              >
+                <Navbar />
+
+                <Container maxWidth="xl" sx={{ py: 3 }}>
+                  <Employees />
+                </Container>
+              </Box>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/employees/new"
+          element={
+            <ProtectedRoute allowedAdminRoles={['emedix_hr']}>
+              <Box
+                sx={{
+                  minHeight: '100vh',
+                  background: '#f4fdfc',
+                }}
+              >
+                <Navbar />
+
+                <Container maxWidth="xl" sx={{ py: 3 }}>
+                  <EmployeeForm />
+                </Container>
+              </Box>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/employees/:id"
+          element={
+            <ProtectedRoute allowedAdminRoles={['emedix_hr']}>
+              <Box
+                sx={{
+                  minHeight: '100vh',
+                  background: '#f4fdfc',
+                }}
+              >
+                <Navbar />
+
+                <Container maxWidth="xl" sx={{ py: 3 }}>
+                  <EmployeeForm />
                 </Container>
               </Box>
             </ProtectedRoute>

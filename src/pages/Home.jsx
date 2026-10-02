@@ -20,6 +20,7 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import AssignmentReturnIcon from '@mui/icons-material/AssignmentReturn';
 import PersonAddAlt1Icon from '@mui/icons-material/PersonAddAlt1';
 import DescriptionIcon from '@mui/icons-material/Description';
+import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
 import { AuthContext } from '../context/AuthContext';
 import { getGrievances } from '../services/grievances';
 
@@ -196,7 +197,7 @@ const Home = () => {
 
   const isManager = MANAGER_ADMIN_ROLES.includes(adminRole);
   const canAccessOnboarding = ONBOARDING_ROLES.includes(adminRole);
-  const grievanceScope = isManager ? 'unassigned' : 'mine';
+  const grievanceScope = adminRole === 'emedix_hr' ? null : isManager ? 'unassigned' : 'mine';
 
   useEffect(() => {
     let cancelled = false;
@@ -265,6 +266,46 @@ const Home = () => {
             description="Report a store-related issue and track it to resolution."
             onClick={() => navigate('/grievances/new')}
             delay={200}
+          />
+        </Box>
+      </Box>
+    );
+  }
+
+  if (adminRole === 'emedix_hr') {
+    return (
+      <Box sx={{ px: { xs: 2, sm: 3 }, py: { xs: 3, sm: 4 }, maxWidth: 1100, mx: 'auto' }}>
+        <HeroHeader
+          greeting={greeting}
+          subtitle="Manage employee onboarding from one place."
+          sideTop={adminRole}
+          sideBottom="Emedix Team"
+        />
+
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+            gap: 2.5,
+          }}
+        >
+          <ActionCard
+            icon={<BadgeOutlinedIcon />}
+            iconBg="#e0f7f5"
+            iconColor="#0c7f7b"
+            title="Employees"
+            description="View employees and fill in their joining forms."
+            onClick={() => navigate('/employees')}
+            delay={0}
+          />
+          <ActionCard
+            icon={<PersonAddAlt1Icon />}
+            iconBg="#e0f7f5"
+            iconColor="#0c7f7b"
+            title="Add Employee"
+            description="Start onboarding a new employee."
+            onClick={() => navigate('/employees/new')}
+            delay={50}
           />
         </Box>
       </Box>

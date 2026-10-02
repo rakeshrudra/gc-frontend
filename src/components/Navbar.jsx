@@ -35,6 +35,7 @@ import DescriptionIcon from "@mui/icons-material/Description";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import SupportAgentIcon from "@mui/icons-material/SupportAgent";
+import BadgeOutlinedIcon from "@mui/icons-material/BadgeOutlined";
 
 import logo from "../assets/eops-logo.png";
 import vitalityLogo from "../assets/vitality-logo.png";
@@ -46,6 +47,7 @@ const Navbar = ({ onMenuSelect }) => {
   const location = useLocation();
   const { logout, role, adminRole } = useContext(AuthContext);
   const isStoreRole = role === "store";
+  const isHr = adminRole === "emedix_hr";
   const canAccessOnboarding = [
     "emedix_sales",
     "emedix_op_admin",
@@ -161,8 +163,32 @@ const Navbar = ({ onMenuSelect }) => {
           </ListItemButton>
         </ListItem>
 
+        {/* EMPLOYEES */}
+        {isHr && (
+          <ListItem disablePadding>
+            <ListItemButton onClick={() => handleMenuClick("/employees")}>
+              <ListItemIcon>
+                <BadgeOutlinedIcon sx={{ color: "#0f9f9a" }} />
+              </ListItemIcon>
+
+              <ListItemText
+                primary={
+                  <Typography
+                    sx={{
+                      fontWeight: 600,
+                      fontSize: "0.9rem",
+                    }}
+                  >
+                    Employees
+                  </Typography>
+                }
+              />
+            </ListItemButton>
+          </ListItem>
+        )}
+
         {/* YES MAYBE REPORT */}
-        {!isStoreRole && (
+        {!isStoreRole && !isHr && (
           <ListItem disablePadding>
             <ListItemButton
               onClick={() => handleMenuClick("/dashboard", "match")}
@@ -188,6 +214,7 @@ const Navbar = ({ onMenuSelect }) => {
         )}
 
         {/* PROCESSED ORDERS */}
+        {!isHr && (
         <ListItem disablePadding>
           <ListItemButton onClick={() => handleMenuClick("/processed-orders")}>
             <ListItemIcon>
@@ -208,8 +235,10 @@ const Navbar = ({ onMenuSelect }) => {
             />
           </ListItemButton>
         </ListItem>
+        )}
 
         {/* GRIEVANCES */}
+        {!isHr && (
         <ListItem disablePadding>
           <ListItemButton onClick={() => handleMenuClick("/grievances")}>
             <ListItemIcon>
@@ -230,6 +259,7 @@ const Navbar = ({ onMenuSelect }) => {
             />
           </ListItemButton>
         </ListItem>
+        )}
 
         {/* RAISE A GRIEVANCE */}
         {isStoreRole && (
@@ -280,7 +310,7 @@ const Navbar = ({ onMenuSelect }) => {
         )}
 
         {/* EXPIRY RETURN */}
-        {!isStoreRole && (
+        {!isStoreRole && !isHr && (
           <ListItem disablePadding>
             <ListItemButton onClick={() => handleMenuClick("/expiry-return")}>
               <ListItemIcon>
@@ -304,7 +334,7 @@ const Navbar = ({ onMenuSelect }) => {
         )}
 
         {/* MASTER UPLOAD */}
-        {!isStoreRole && (
+        {!isStoreRole && !isHr && (
           <ListItem disablePadding>
             <ListItemButton onClick={() => handleMenuClick("/master-upload")}>
               <ListItemIcon>
@@ -401,7 +431,7 @@ const Navbar = ({ onMenuSelect }) => {
         )}
 
         {/* SEARCH */}
-        {!isStoreRole && (
+        {!isStoreRole && !isHr && (
           <ListItem disablePadding>
             <ListItemButton
               onClick={() =>
